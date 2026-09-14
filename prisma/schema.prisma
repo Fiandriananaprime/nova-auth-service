@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// NOTE: "auth" is its own microservice here — it owns identity/credentials
+// and account security (section 1 of schema.sql): login, sessions, email/
+// phone verification, password reset, 2FA, CSRF.
+//
+// This service's `User` model is the source of truth for id/email/password/
+// role/status/verification flags. The `user` service's own `User` model
+// (already provided) owns the *profile* side (name, addresses, preferences)
+// and references the same id as a plain scalar, without a password field —
+// the two are kept in sync via events, not a shared database or Prisma
+// relation, since each microservice has its own DB.
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  buyer
+  seller
+  admin
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  active
+  suspended
+
+  @@map("user_status")
+}
+
+enum AdminRole {
+  super_admin
+  admin
+  moderator
+  delivery
+
+  @@map("admin_role")
+}
+
+enum VerificationChannel {
+  email
+  phone
+
+  @@map("verification_channel")
+}
+
+enum VerificationPurpose {
+  email_verification
+  phone_verification
+  two_factor
+  email_change
+
+  @@map("verification_purpose")
+}
+
+model User {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName      String      @map("first_name")
+  lastName       String      @map("last_name")
+  email          String      @unique
+  passwordHash   String      @map("password_hash")
+  phone          String?     @unique @db.VarChar(30)
+  role           UserRole
+  status         UserStatus  @default(active)
+  adminRole      AdminRole?  @map("admin_role")
+  avatarUrl      String?     @map("avatar_url")
+  emailVerified  Boolean     @default(false) @map("email_verified")
+  phoneVerified  Boolean     @default(false) @map("phone_verified")
+  lastLoginAt    DateTime?   @map("last_login_at") @db.Timestamptz(6)
+  lastLoginIp    String?     @map("last_login_ip")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions            UserSession[]
+  verificationCodes   VerificationCode[]
+  passwordResetTokens PasswordResetToken[]
+  twoFactorSettings   TwoFactorSettings?
+  twoFactorRecovery   TwoFactorRecoveryCode[]
+
+  @@index([role, status], map: "idx_users_role_status")
+  @@index([lastLoginAt(sort: Desc)], map: "idx_users_last_login_at")
+  @@map("users")
+}
+
+model UserSession {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  refreshTokenHash  String    @unique @map("refresh_token_hash")
+  device            String
+  browser           String
+  operatingSystem   String    @map("operating_system")
+  ipAddress         String    @map("ip_address")
+  location          String?
+  lastActiveAt      DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  remember          Boolean   @default(false)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csrfTokens  CsrfToken[]
+
+  @@index([userId, revokedAt, expiresAt], map: "idx_user_sessions_user_active")
+  @@map("user_sessions")
+}
+
+model VerificationCode {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String?             @map("user_id") @db.Uuid
+  channel     VerificationChannel
+  purpose     VerificationPurpose
+  destination String?
+  codeHash    String              @map("code_hash")
+  expiresAt   DateTime            @map("expires_at") @db.Timestamptz(6)
+  consumedAt  DateTime?           @map("consumed_at") @db.Timestamptz(6)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt], map: "idx_verification_codes_user_purpose")
+  @@map("verification_codes")
+}
+
+model PasswordResetToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt], map: "idx_password_reset_user")
+  @@map("password_reset_tokens")
+}
+
+model TwoFactorSettings {
+  userId           String    @id @map("user_id") @db.Uuid
+  enabled          Boolean   @default(false)
+  secretEncrypted  String?   @map("secret_encrypted")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  verifiedAt       DateTime? @map("verified_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("two_factor_settings")
+}
+
+model TwoFactorRecoveryCode {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @unique @map("code_hash")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt], map: "idx_recovery_codes_user")
+  @@map("two_factor_recovery_codes")
+}
+
+model CsrfToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId  String?   @map("session_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  usedAt     DateTime? @map("used_at") @db.Timestamptz(6)
+
+  session UserSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, expiresAt], map: "idx_csrf_tokens_session")
+  @@map("csrf_tokens")
+}
