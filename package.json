@@ -5,10 +5,15 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
-    "postinstall": "prisma skills sync || exit 0"
+    "start": "node dist/server.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
   },
   "repository": {
     "type": "git",
@@ -24,7 +29,7 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.20.2",
-    "prisma": "^8.0.0-rc.13",
+    "prisma": "^7.10.0",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3"
   },
@@ -32,9 +37,14 @@
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
     "@fastify/helmet": "^13.1.1",
+    "@Fiandriananaprime/nova_api_type": "^1.1.5",
+    "@Fiandriananaprime/service-core": "^1.0.1",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
     "fastify": "^5.12.4",
+    "pg": "^8.23.0",
     "redis": "^6.2.1",
     "zod": "^4.6.2"
   }
