@@ -13,4 +13,5 @@ function getEnv(name: string): string {
 export const env = {
   REDIS_URL: getEnv("REDIS_URL"),
   USER_SERVICE: getEnv("USER_SERVICE"),
+  RABBITMQ_URL: getEnv("RABBITMQ_URL")
 };

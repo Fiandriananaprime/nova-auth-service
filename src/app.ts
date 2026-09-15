@@ -12,6 +12,11 @@ import { prisma } from "./database/prisma.js";
 
 
 import { registerCookie } from "./plugins/cookies.js";
+import { setupRabbitMQ } from "./config/rabbitMq.js";
+
+await setupRabbitMQ();
+
+
 
 export const app = fastify();
 
@@ -69,3 +74,4 @@ app.setErrorHandler((error, request, reply) => {
     },
   });
 });
+

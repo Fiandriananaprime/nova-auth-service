@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/Fiandriananaprime/nova-auth-service#readme",
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.20.2",
     "prisma": "^7.10.0",
@@ -42,6 +43,7 @@
     "@Fiandriananaprime/service-core": "^1.0.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "amqplib": "^2.0.1",
     "argon2": "^0.45.1",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",

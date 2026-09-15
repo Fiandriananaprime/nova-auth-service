@@ -2,7 +2,7 @@ export type CreateVerificationCode = {
   userId?: string;
   channel: VerificationChannel;
   purpose: VerificationPurpose;
-  destination?: string;
+  destination: string;
   codeHash: string;
   expiresAt: Date;
   consumedAt?: Date;

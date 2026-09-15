@@ -9,3 +9,31 @@ export class EmailNotVerifiedError extends AppError {
     );
   }
 }
+
+export class VerificationNotFound extends AppError {
+  constructor() {
+    super(
+      "VERIFICATION_CODE_NOTFOUND",
+      404,
+      "Verification code not found",
+    );
+  }
+}
+
+export class InvalidVerficationCode extends AppError {
+  constructor(){
+   super( "INVALID_VERIFICATION_CODE",
+    400,
+    "Invalid verification code")
+  }
+}
+
+export class ExpiredVerificationCode extends AppError {
+  constructor(){
+    super(
+      "VERIFICATION_CODE_EXPIRED",
+      400,
+    "Verification code expired",
+    )
+  }
+}

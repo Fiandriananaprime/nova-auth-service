@@ -124,10 +124,10 @@ model UserSession {
 
 model VerificationCode {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String?             @map("user_id") @db.Uuid
+  userId      String             @map("user_id") @db.Uuid
   channel     VerificationChannel
   purpose     VerificationPurpose
-  destination String?
+  destination String
   codeHash    String              @map("code_hash")
   expiresAt   DateTime            @map("expires_at") @db.Timestamptz(6)
   consumedAt  DateTime?           @map("consumed_at") @db.Timestamptz(6)

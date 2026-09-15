@@ -13,15 +13,15 @@ import {
 
 import { UserRepository } from "../repository/user.repository.js";
 import { VerificationCodeRepository } from "../repository/verificationCode.repository.js";
-import { OutboxRepository } from "../repository/outbox.repository.js";
 import { UserClient } from "../client/user.client.js";
+import { EventService } from "./event.service.js";
 
 
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly verificationCodeRepository: VerificationCodeRepository,
-    private readonly outboxRepository: OutboxRepository,
+    private readonly eventService: EventService,
     private readonly userClient: UserClient,
   ) {}
 
@@ -68,18 +68,16 @@ export class UserService {
           verificationCode,
         );
 
-        await this.outboxRepository.create(
-          tx,
-          "VerificationCodeCreated",
-          {
+        await this.eventService.emit(tx, {
+          type: "auth.email_verification_requested",
+          payload: {
+            event: "auth.email_verification_requested",
             userId: user.id,
-            channel: "email",
-            purpose: "email_verification",
-            destination: data.email,
+            email: data.email,
             code,
-            expiresAt: verificationCode.expiresAt,
+            expiresAt: verificationCode.expiresAt.toISOString(),
           },
-        );
+        });
 
         return credentials;
       });
