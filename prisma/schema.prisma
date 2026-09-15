@@ -65,7 +65,7 @@ model User {
   firstName      String      @map("first_name")
   lastName       String      @map("last_name")
   email          String      @unique
-  passwordHash   String      @map("password_hash")
+  password   String      @map("password_hash")
   phone          String?     @unique @db.VarChar(30)
   role           UserRole
   status         UserStatus  @default(active)
@@ -87,6 +87,17 @@ model User {
   @@index([role, status], map: "idx_users_role_status")
   @@index([lastLoginAt(sort: Desc)], map: "idx_users_last_login_at")
   @@map("users")
+}
+
+model OutboxEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+
+  @@index([publishedAt], map: "idx_outbox_events_published_at")
+  @@map("outbox_events")
 }
 
 model UserSession {

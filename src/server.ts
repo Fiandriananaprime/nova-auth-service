@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { app } from "./app.js";
+import { redis } from "./database/redis.js";
 
 const PORT = Number(process.env["PORT"]) || 3001;
 
@@ -10,7 +11,7 @@ const start = async () => {
             port: PORT,
             host: "0.0.0.0",
         });
-
+        await redis.connect();
         console.log("Service running at: " + address)
     } catch (error) {
         console.error(`Service failed to start on port ${PORT}:`, error);
