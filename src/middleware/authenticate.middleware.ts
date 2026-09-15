@@ -6,10 +6,10 @@ declare module "fastify" {
   }
 }
 
-export async function authenticate(
+export  const authenticate = async (
   request: FastifyRequest,
   reply: FastifyReply,
-) {
+) => {
   const sessionId = request.sessionId ?? request.cookies?.["session_id"];
 
   if (!sessionId) {

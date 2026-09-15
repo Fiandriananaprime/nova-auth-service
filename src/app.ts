@@ -36,7 +36,6 @@ await registerCookie(app)
 
 routes(app)
 
-//ERROR Handler
 app.setErrorHandler((error, request, reply) => {
   request.log.error(error);
 
