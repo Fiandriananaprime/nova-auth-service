@@ -4,7 +4,7 @@ import { randomInt } from "node:crypto";
 
 import { UserAlreadyExists } from "../errorHandler/UserError.js";
 
-import type { createUserDto, RegisterRequest } from "../dto/UserSchema.js";
+import type { RegisterRequest } from "../dto/UserSchema.js";
 import {
   VerificationChannel,
   VerificationPurpose,

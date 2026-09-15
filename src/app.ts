@@ -1,7 +1,9 @@
-import Fastify from "fastify"
-import { 
-  registerHealth,registerReady, 
-  registerVersion,registerMetrics 
+import fastify from "fastify";
+import {
+  registerHealth,
+  registerReady,
+  registerVersion,
+  registerMetrics,
 } from "@Fiandriananaprime/service-core";
 
 import { routes } from "./route.js"
@@ -11,7 +13,7 @@ import { prisma } from "./database/prisma.js";
 
 import { registerCookie } from "./plugins/cookies.js";
 
-export const app = Fastify();
+export const app = fastify();
 
 registerHealth(app);
 

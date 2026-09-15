@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { userRoute } from "./routes/user.route.js";
+import { authRoute } from "./routes/auth.route.js";
 
 import { UserService } from "./service/user.service.js";
 
@@ -14,21 +14,22 @@ import { AccessTokenService } from "./service/accessToken.service.js";
 import { InitiateClient } from "./client/index.js";
 
 export const routes = (app: FastifyInstance) => {
+  const outboxRepository = new OutboxRepository();
+  const sessionRepository = new SessionRepository();
+  const userRepository = new UserRepository();
+  const verificationCodeRepository = new VerificationCodeRepository();
 
-    // Dependencies
-    const outboxRepository = new OutboxRepository();
-    const sessionRepository = new SessionRepository();
-    const userRepository = new UserRepository();
-    const verificationCodeRepository = new VerificationCodeRepository();
+  const authService = new AuthService(userRepository);
+  const accessTokenService = new AccessTokenService();
+  const sessionService = new SessionService(sessionRepository, accessTokenService);
+  const userService = new UserService(
+    userRepository,
+    verificationCodeRepository,
+    outboxRepository,
+    InitiateClient(),
+  );
 
-    //Services
-    const authService = new AuthService(userRepository);
-    const accessTokenService = new AccessTokenService();
-    const sessionService = new SessionService(sessionRepository,accessTokenService);
-    const userService= new UserService(userRepository,verificationCodeRepository,outboxRepository,InitiateClient());
+  const authController = new AuthController(userService, sessionService, authService);
 
-    // Controller
-    const authController = new AuthController(userService,sessionService,authService);
-
-    userRoute(app,authController,{prefix: "/api"})
+  authRoute(app, authController, { prefix: "/api" });
 };
