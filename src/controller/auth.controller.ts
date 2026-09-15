@@ -60,6 +60,13 @@ export class AuthController {
     return reply.status(200).send(user);
   }
 
+  async resendVerificationCode(request: FastifyRequest<{Body:{userId:string,target:string}}>,reply:FastifyReply){
+    const { userId, target } = request.body
+    await this.authService.resendCode(userId,target);
+
+    return reply.status(204).send();
+  }
+
   async getCsrf(request: FastifyRequest, reply: FastifyReply) {
     const sessionId = request.sessionId ?? request.cookies?.["session_id"];
 

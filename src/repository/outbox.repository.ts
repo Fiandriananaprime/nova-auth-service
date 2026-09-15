@@ -12,14 +12,16 @@ export class OutboxRepository {
     }
 
     async create(
-        tx: Prisma.TransactionClient,
+        tx: Prisma.TransactionClient | undefined,
         type: string,
-        payload: Prisma.InputJsonValue
-    ) {
-        return tx.outboxEvent.create({
+        payload: Prisma.InputJsonValue,
+        ): Promise<void> {
+        const db = tx ?? prisma;
+
+    await db.outboxEvent.create({
             data: {
-                type,
-                payload,
+            type,
+            payload,
             },
         });
     }

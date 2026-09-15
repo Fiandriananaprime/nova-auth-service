@@ -9,7 +9,14 @@ export type AppEvent = {
 export class EventService {
   constructor(private readonly outboxRepository: OutboxRepository) {}
 
-  async emit(tx: Prisma.TransactionClient, event: AppEvent): Promise<void> {
-    await this.outboxRepository.create(tx, event.type, event.payload);
-  }
+  async emit(
+  event: AppEvent,
+  tx?: Prisma.TransactionClient,
+): Promise<void> {
+  await this.outboxRepository.create(
+    tx,
+    event.type,
+    event.payload,
+  );
+}
 }

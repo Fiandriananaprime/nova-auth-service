@@ -26,5 +26,10 @@ export const authRoute = (
       { preHandler: authenticate },
       userControler.getCsrf.bind(userControler),
     );
+
+    router.post(
+        "auth/email/resend-verification",
+        userControler.resendVerificationCode.bind(userControler)
+    )
   }, option);
 };

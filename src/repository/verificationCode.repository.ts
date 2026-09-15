@@ -5,8 +5,12 @@ import type { CreateVerificationCode } from "../dto/VerificationCodeSchema.js"
 
 export class VerificationCodeRepository {
     
-    async create(tx:Prisma.TransactionClient,data:CreateVerificationCode){
-        await tx.verificationCode.create({data})
+    async create(
+        data:CreateVerificationCode,
+        tx?:Prisma.TransactionClient,
+    ){
+        const db = tx ?? prisma
+        await db.verificationCode.create({data})
     }
 
     async findById(id:string){

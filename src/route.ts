@@ -13,6 +13,7 @@ import { SessionService } from "./service/session.service.js";
 import { AccessTokenService } from "./service/accessToken.service.js";
 import { InitiateClient } from "./client/index.js";
 import { VerificationCodeRepository } from "./repository/verificationCode.repository.js";
+import { VerificationCodeService } from "./service/verificationCode.service.js";
  
 
 export const routes = (app: FastifyInstance) => {
@@ -22,10 +23,11 @@ export const routes = (app: FastifyInstance) => {
   const verificationCodeRepository = new VerificationCodeRepository();
   const eventService = new EventService(outboxRepository);
 
-  const authService = new AuthService(userRepository, verificationCodeRepository);
   const accessTokenService = new AccessTokenService();
   const sessionService = new SessionService(sessionRepository, accessTokenService);
-  const userService = new UserService(userRepository,verificationCodeRepository,eventService,InitiateClient(),);
+  const verificationCodeService = new VerificationCodeService(verificationCodeRepository,eventService)
+  const authService = new AuthService(userRepository, verificationCodeRepository,verificationCodeService);
+  const userService = new UserService(userRepository,InitiateClient(),verificationCodeService);
 
   const authController = new AuthController(userService, sessionService, authService);
 
