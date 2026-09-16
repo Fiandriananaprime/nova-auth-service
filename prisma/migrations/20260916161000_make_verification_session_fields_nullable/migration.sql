@@ -1,0 +1,5 @@
+ALTER TABLE "user_sessions"
+ALTER COLUMN "device" DROP NOT NULL,
+ALTER COLUMN "browser" DROP NOT NULL,
+ALTER COLUMN "operating_system" DROP NOT NULL,
+ALTER COLUMN "ip_address" DROP NOT NULL;

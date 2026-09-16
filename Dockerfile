@@ -6,12 +6,19 @@ ARG NODE_AUTH_TOKEN
 
 COPY package*.json ./
 
-RUN echo "@Fiandriananaprime:registry=https://npm.pkg.github.com" > .npmrc \
+RUN --mount=type=cache,target=/root/.npm \
+	echo "@Fiandriananaprime:registry=https://npm.pkg.github.com" > .npmrc \
 	&& echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc \
 	&& npm ci \
 	&& rm -f .npmrc
 
-COPY . .
+COPY prisma ./prisma
+COPY prisma7.config.ts ./
+
+RUN npx prisma generate
+
+COPY src ./src
+COPY tsconfig.json ./
 
 RUN npm run build
 
@@ -27,13 +34,17 @@ ARG NODE_AUTH_TOKEN
 
 COPY package*.json ./
 
-RUN echo "@Fiandriananaprime:registry=https://npm.pkg.github.com" > .npmrc \
+RUN --mount=type=cache,target=/root/.npm \
+	echo "@Fiandriananaprime:registry=https://npm.pkg.github.com" > .npmrc \
 	&& echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc \
 	&& npm ci --omit=dev \
 	&& rm -f .npmrc
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/src/generated/prisma ./dist/generated/prisma
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma7.config.ts ./prisma7.config.ts
 
 EXPOSE 3001
 
-CMD ["node", "dist/server.js"]
+ENTRYPOINT ["sh", "-c", ": \"${DATABASE_URL:?DATABASE_URL is required}\" && npx prisma migrate deploy --schema=prisma/schema.prisma && exec node dist/server.js"]

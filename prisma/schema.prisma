@@ -103,11 +103,11 @@ model OutboxEvent {
 model UserSession {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String    @map("user_id") @db.Uuid
-  refreshTokenHash  String    @unique @map("refresh_token_hash")
-  device            String
-  browser           String
-  operatingSystem   String    @map("operating_system")
-  ipAddress         String    @map("ip_address")
+  refreshTokenHash  String?    @unique @map("refresh_token_hash")
+  device            String?
+  browser           String?
+  operatingSystem   String?    @map("operating_system")
+  ipAddress         String?    @map("ip_address")
   location          String?
   lastActiveAt      DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(6)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)

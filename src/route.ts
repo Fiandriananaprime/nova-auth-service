@@ -31,5 +31,5 @@ export const routes = (app: FastifyInstance) => {
 
   const authController = new AuthController(userService, sessionService, authService);
 
-  authRoute(app, authController, { prefix: "/api" });
+  authRoute(app, authController,accessTokenService,sessionRepository, { prefix: "/api" });
 };

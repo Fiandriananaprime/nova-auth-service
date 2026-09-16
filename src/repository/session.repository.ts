@@ -5,12 +5,12 @@ export class SessionRepository {
   async create(
     data: {
       userId: string;
-      refreshTokenHash: string;
-      device: string;
-      browser: string;
-      operatingSystem: string;
-      ipAddress: string;
-      location: string;
+      refreshTokenHash?: string;
+      device?: string;
+      browser?: string;
+      operatingSystem?: string;
+      ipAddress?: string;
+      location?: string;
       expiresAt: Date;
       remember?: boolean;
     }
@@ -18,12 +18,12 @@ export class SessionRepository {
     return prisma.userSession.create({
       data: {
         userId: data.userId,
-        refreshTokenHash: data.refreshTokenHash,
-        device: data.device,
-        browser: data.browser,
-        operatingSystem: data.operatingSystem,
-        ipAddress: data.ipAddress,
-        location: data.location,
+        refreshTokenHash: data.refreshTokenHash ?? null,
+        device: data.device ?? null ,
+        browser: data.browser ?? null,
+        operatingSystem: data.operatingSystem ?? null,
+        ipAddress: data.ipAddress ?? null,
+        location: data.location ?? null,
         expiresAt: data.expiresAt,
         remember: data.remember?? false
       },

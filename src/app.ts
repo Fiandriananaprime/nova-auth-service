@@ -18,7 +18,7 @@ await setupRabbitMQ();
 
 
 
-export const app = fastify();
+export const app = fastify({ logger: true });
 
 registerHealth(app);
 

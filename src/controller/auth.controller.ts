@@ -20,6 +20,15 @@ export class AuthController {
     const body = request.body as RegisterRequest;
     const user = await this.userService.createUser(body);
 
+    const verificationSession = await this.sessionService.createVerificationSession(user.id)
+
+    reply.setCookie("verification_token",verificationSession.accessToken,{
+      httpOnly:true,
+      secure:true,
+      sameSite:"lax",
+      path: "/"
+    })
+    
     return reply.status(201).send(user);
   }
 
@@ -68,7 +77,7 @@ export class AuthController {
   }
 
   async getCsrf(request: FastifyRequest, reply: FastifyReply) {
-    const sessionId = request.sessionId ?? request.cookies?.["session_id"];
+    const sessionId = request.sessionId ;
 
     if (!sessionId) {
       return reply.code(401).send({ error: "Unauthorized" });

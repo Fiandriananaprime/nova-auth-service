@@ -18,11 +18,11 @@ export class OutboxRepository {
         ): Promise<void> {
         const db = tx ?? prisma;
 
-    await db.outboxEvent.create({
-            data: {
+        await db.outboxEvent.create({
+          data: {
             type,
             payload,
-            },
+          },
         });
     }
 

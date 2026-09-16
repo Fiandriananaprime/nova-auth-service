@@ -8,7 +8,25 @@ export class SessionService {
     private readonly sessionRepository: SessionRepository,
     private readonly accessTokenService: AccessTokenService,
   ) {}
+  
+  async createVerificationSession(userId: string){
 
+    const expiresAt = new Date( Date.now() + 15 * 60 * 1000);
+    const session = await this.sessionRepository.create({userId,expiresAt})
+
+    const {accessToken, expiresIn} = await this.accessTokenService.create({
+      userId:userId,
+      sessionId:session.id,
+      purpose:"verification"
+    })
+
+    return {
+      session,
+      accessToken,
+      expiresIn
+    }
+  }
+  
   async createSession(data: {
     userId: string;
     ipAddress: string;
@@ -45,6 +63,7 @@ export class SessionService {
       await this.accessTokenService.create({
         userId: data.userId,
         sessionId: session.id,
+        purpose:"access"
       });
 
     return {

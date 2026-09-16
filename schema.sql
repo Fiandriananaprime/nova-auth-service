@@ -81,13 +81,13 @@ CREATE TABLE user_sessions (
 
     user_id UUID NOT NULL,
 
-    refresh_token_hash TEXT NOT NULL UNIQUE,
+    refresh_token_hash TEXT UNIQUE,
 
-    device TEXT NOT NULL,
-    browser TEXT NOT NULL,
-    operating_system TEXT NOT NULL,
+    device TEXT,
+    browser TEXT,
+    operating_system TEXT,
 
-    ip_address TEXT NOT NULL,
+    ip_address TEXT,
     location TEXT,
 
     last_active_at TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
