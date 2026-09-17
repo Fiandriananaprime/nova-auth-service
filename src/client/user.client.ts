@@ -1,3 +1,5 @@
+import type { Address } from "@Fiandriananaprime/nova_api_type";
+
 export type UserClientResponse = {
         id: string;
         firstName: string;
@@ -29,6 +31,14 @@ export class UserClient {
     return (await response.json()) as UserClientResponse;
   }
 
+  async getUserAddresses(userId: string): Promise<{address:Address[]}> {
+    const response = await fetch(`${this.baseUrl}/internal/addresses?userId=${userId}`)
+    const result =await response.json() as {address : Address[]};
+
+    if(!response.ok) throw new Error("failed to fetch Addresses for user" + userId)
+    return result
+  }
+  
   async deleteUser(id: string): Promise<void> {
     const response = await fetch(
         `${this.baseUrl}/internal/users/${id}`,

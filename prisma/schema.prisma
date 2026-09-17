@@ -73,7 +73,7 @@ model User {
   avatarUrl      String?     @map("avatar_url")
   emailVerified  Boolean     @default(false) @map("email_verified")
   phoneVerified  Boolean     @default(false) @map("phone_verified")
-  lastLoginAt    DateTime?   @map("last_login_at") @db.Timestamptz(6)
+  lastLoginAt    DateTime    @default(now()) @map("last_login_at") @db.Timestamptz(6)
   lastLoginIp    String?     @map("last_login_ip")
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

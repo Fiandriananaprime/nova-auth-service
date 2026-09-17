@@ -2,11 +2,13 @@ import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
 import { SessionRepository } from "../repository/session.repository.js";
 import { AccessTokenService } from "./accessToken.service.js";
+import type { UserRepository } from "../repository/user.repository.js";
 
 export class SessionService {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly accessTokenService: AccessTokenService,
+    private readonly userRepository: UserRepository
   ) {}
   
   async createVerificationSession(userId: string){
@@ -66,6 +68,7 @@ export class SessionService {
         purpose:"access"
       });
 
+    await this.userRepository.updateLastLoginAt(data.userId);
     return {
       session,
       accessToken,

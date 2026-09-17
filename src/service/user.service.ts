@@ -9,6 +9,7 @@ import { UserRepository } from "../repository/user.repository.js";
 import { UserClient } from "../client/user.client.js";
 import { VerificationCodeService } from "./verificationCode.service.js";
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
+import type { User } from "@Fiandriananaprime/nova_api_type";
 
 export class UserService {
   constructor(
@@ -60,9 +61,17 @@ export class UserService {
     }
   }
 
-  async findById(id:string){
+  async findById(id:string): Promise<User>{
     const user = await this.userRepository.findById(id)
     if(!user) throw new UserNotFoundError();
-    return user
+    
+    const { address } = await this.userClient.getUserAddresses(id);
+    return {
+      ...user,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+      lastLoginAt: user.lastLoginAt.toISOString(),
+      addresses: address
+    }
   }
 }

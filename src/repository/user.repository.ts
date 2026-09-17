@@ -53,4 +53,8 @@ export class UserRepository {
     async markEmailAsVerified(id:string){
         await prisma.user.update({where:{id},data:{emailVerified: true}})
     }
+
+    async updateLastLoginAt(id: string){
+        await prisma.user.update({where:{id}, data:{lastLoginAt:new Date()}})
+    }
 }
