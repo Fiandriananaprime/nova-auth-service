@@ -3,3 +3,5 @@ dist/
 .env*
 !.env.example
 /src/generated/prisma
+postman/
+.postman

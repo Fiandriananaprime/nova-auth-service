@@ -14,7 +14,7 @@ export const authRoute = (
   option: { prefix: string },
 ) => {
 
-  //const authenticateMiddleware = authenticate(accessTokenService,sessionRepository,"access")
+  const authenticateMiddleware = authenticate(accessTokenService,sessionRepository,"access")
   const verificationMiddleware = authenticate(accessTokenService,sessionRepository,"verification");
   
   app.register((router) => {
@@ -77,5 +77,7 @@ export const authRoute = (
     );
 
     router.post
+
+    router.get("/auth/me",{ preHandler: authenticateMiddleware}, userControler.getCurrentUser.bind(userControler))
   }, option);
 };

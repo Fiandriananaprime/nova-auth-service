@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 
 import { prisma } from "../database/prisma.js";
-import { UserAlreadyExists } from "../errorHandler/UserError.js";
+import { UserAlreadyExists, UserNotFoundError } from "../errorHandler/UserError.js";
 
 import type { RegisterRequest } from "../dto/UserSchema.js";
 
@@ -58,5 +58,11 @@ export class UserService {
       await this.userClient.deleteUser(user.id);
       throw error;
     }
+  }
+
+  async findById(id:string){
+    const user = await this.userRepository.findById(id)
+    if(!user) throw new UserNotFoundError();
+    return user
   }
 }
