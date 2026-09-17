@@ -25,7 +25,7 @@ export const routes = (app: FastifyInstance) => {
   const eventService = new EventService(outboxRepository);
 
   const accessTokenService = new AccessTokenService();
-  const sessionService = new SessionService(sessionRepository, accessTokenService);
+  const sessionService = new SessionService(sessionRepository, accessTokenService,userRepository);
   const verificationCodeService = new VerificationCodeService(verificationCodeRepository,eventService)
   const authService = new AuthService(userRepository, verificationCodeRepository,verificationCodeService);
   const userService = new UserService(userRepository,InitiateClient(),verificationCodeService);

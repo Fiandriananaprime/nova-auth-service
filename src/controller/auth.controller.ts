@@ -136,7 +136,7 @@ export class AuthController {
     return reply.status(204).send();
   }
 
-  async validateAccessToken(request:FastifyRequest<{Body:{access_token:string}}>,reply:FastifyReply) {
+  async validateAccessToken(request:FastifyRequest<{Body:{access_token:string}}>) {
 
     const data = await redis.get(`access_token:${request.body.access_token}`);
 
