@@ -7,6 +7,7 @@ import { parseUserAgent } from "../utils/user-agent.js";
 import { CsrfService } from "../service/csrf.service.js";
 import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
 import { VerificationChannel } from "../dto/VerificationCodeSchema.js";
+import { redis } from "../database/redis.js";
 
 export class AuthController {
   constructor(
@@ -135,4 +136,23 @@ export class AuthController {
     return reply.status(204).send();
   }
 
+  async validateAccessToken(request:FastifyRequest<{Body:{access_token:string}}>,reply:FastifyReply) {
+
+    const data = await redis.get(`access_token:${request.body.access_token}`);
+
+    if (!data) {
+      throw new UnauthorizedError("Invalid access token");
+    }
+
+    const session = JSON.parse(data) as {
+      userId: string;
+      sessionId: string;
+    };
+
+    return {
+      valid: true,
+      userId: session.userId,
+      sessionId: session.sessionId,
+    };
+  }
 }

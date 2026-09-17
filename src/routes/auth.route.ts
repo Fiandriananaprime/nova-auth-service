@@ -75,5 +75,7 @@ export const authRoute = (
       },
       userControler.verifyPhoneCode.bind(userControler),
     );
+
+    router.post
   }, option);
 };

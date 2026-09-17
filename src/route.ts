@@ -14,6 +14,7 @@ import { AccessTokenService } from "./service/accessToken.service.js";
 import { InitiateClient } from "./client/index.js";
 import { VerificationCodeRepository } from "./repository/verificationCode.repository.js";
 import { VerificationCodeService } from "./service/verificationCode.service.js";
+import { InternalRoute } from "./routes/internal.route.js";
  
 
 export const routes = (app: FastifyInstance) => {
@@ -32,4 +33,5 @@ export const routes = (app: FastifyInstance) => {
   const authController = new AuthController(userService, sessionService, authService);
 
   authRoute(app, authController,accessTokenService,sessionRepository, { prefix: "/api" });
+  InternalRoute(app,authController,{prefix:"/internal"})
 };

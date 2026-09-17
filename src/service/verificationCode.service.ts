@@ -55,6 +55,8 @@ export class VerificationCodeService {
           event: "auth.code.requested",
           userId: data.userId,
           target: data.destination,
+          channel: data.channel,
+          purpose: data.purpose,
           code,
           expiresAt: expiresAt.toISOString(),
         },
