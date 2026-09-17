@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Nova Market Auth Service
-  description: System and monitoring endpoints for the authentication service.
+  description: Internal authentication service contract. Public clients use NovaApiGateway.
   version: 1.0.0
 
 servers:
@@ -11,8 +11,149 @@ servers:
 tags:
   - name: System
     description: Service health, readiness, version, and metrics
+  - name: Auth
+    description: Internal authentication and verification endpoints
+  - name: Internal
+    description: Service-to-service endpoints
 
 paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Register a buyer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created and verification session issued
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+        '409': { description: Email already exists }
+        '422': { description: Invalid request }
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Authenticate a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Authenticated user
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+        '401': { description: Invalid credentials or unverified email }
+  /api/auth/csrf:
+    get:
+      tags: [Auth]
+      operationId: getCsrf
+      summary: Get a CSRF token for a verification session
+      security: [{ verificationCookie: [] }]
+      responses:
+        '200':
+          description: CSRF token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrfToken]
+                properties: { csrfToken: { type: string } }
+        '401': { description: Verification session required }
+  /api/auth/email/send-verification:
+    post:
+      tags: [Auth]
+      operationId: sendEmailVerification
+      summary: Send an email verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/email/resend-verification:
+    post:
+      tags: [Auth]
+      operationId: resendEmailVerification
+      summary: Resend an email verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/phone/send-verification:
+    post:
+      tags: [Auth]
+      operationId: sendPhoneVerification
+      summary: Send a phone verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/phone/resend-verification:
+    post:
+      tags: [Auth]
+      operationId: resendPhoneVerification
+      summary: Resend a phone verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/email/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyEmail
+      summary: Verify an email address
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
+      responses:
+        '204': { description: Email verified }
+        '400': { description: Invalid or expired code }
+        '403': { description: Invalid CSRF token }
+  /api/auth/phone/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyPhone
+      summary: Verify a phone number
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
+      responses:
+        '204': { description: Phone verified }
+        '400': { description: Invalid or expired code }
+        '403': { description: Invalid CSRF token }
+  /internal/validate:
+    post:
+      tags: [Internal]
+      operationId: validateAccessToken
+      summary: Validate an access token for another service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_token]
+              properties: { access_token: { type: string } }
+      responses:
+        '200': { description: Token validation result }
+        '401': { description: Invalid token }
   /health:
     get:
       tags: [System]
@@ -72,7 +213,39 @@ paths:
                 type: string
 
 components:
+  securitySchemes:
+    verificationCookie:
+      type: apiKey
+      in: cookie
+      name: verification_token
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
   schemas:
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [firstName, lastName, email, password]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 100 }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+        remember: { type: boolean, default: false }
+    VerificationCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, minLength: 6, maxLength: 6 }
     HealthResponse:
       type: object
       required: [status]
