@@ -42,7 +42,7 @@ export class UserService {
           password: passwordHash,
         });
 
-        await this.verificationCodeService.createVerificationCode(
+      await this.verificationCodeService.createVerificationCode(
           {
             userId: user.id,
             channel:VerificationChannel.email,

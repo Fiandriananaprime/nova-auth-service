@@ -1,7 +1,7 @@
 export const createUserSchema = {
   type: "object",
 
-  required: ["firstName", "lastName", "password"],
+  required: ["firstName", "lastName", "email", "password"],
 
   properties: {
     firstName: {
@@ -21,33 +21,12 @@ export const createUserSchema = {
       format: "email",
     },
 
-    phone: {
-      type: "string",
-      minLength: 10,
-      maxLength: 14,
-    },
-
     password: {
       type: "string",
       minLength: 8,
       maxLength: 100,
     },
   },
-
-  oneOf: [
-    {
-      required: ["email"],
-      not: {
-        required: ["phone"],
-      },
-    },
-    {
-      required: ["phone"],
-      not: {
-        required: ["email"],
-      },
-    },
-  ],
 
   additionalProperties: false,
 } as const;
@@ -61,3 +40,12 @@ export const requestLogin = {
   },
   additionalProperties: false,
 } as const;
+
+export const requestVerify = {
+  type:"object",
+  required: ["code"],
+  properties:{
+    code:{type:"string"},
+  },
+  additionalProperties: false
+} as const

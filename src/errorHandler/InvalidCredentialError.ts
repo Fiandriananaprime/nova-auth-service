@@ -9,3 +9,13 @@ export class InvalidCredentialsError extends AppError {
     );
   }
 }
+
+export class UnauthorizedError extends AppError {
+  constructor(message:string){
+    super(
+      "USER_UNAUTHORIZED",
+      401,
+      message?? "User unauthorized"
+    );
+  }
+}

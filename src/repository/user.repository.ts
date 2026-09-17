@@ -4,9 +4,17 @@ import type { createUserDto } from "../dto/UserSchema.js";
 
 export class UserRepository {
 
+    async findById(id:string){
+        return prisma.user.findUnique({where:{id}})
+    }
     async findByEmail(email:string){
         return prisma.user.findUnique({where:{email}})
     }
+
+    async findByPhone(phone: string){
+        return prisma.user.findUnique({where:{phone}})
+    }
+    
 
     async createUser(tx:Prisma.TransactionClient,data:createUserDto) {
 
@@ -33,4 +41,16 @@ export class UserRepository {
         });
     }
 
+    async markPhoneAsVerified(id: string) {
+        await prisma.user.update({
+            where: { id },
+            data: {
+            phoneVerified: true,
+            },
+        });
+    }
+
+    async markEmailAsVerified(id:string){
+        await prisma.user.update({where:{id},data:{emailVerified: true}})
+    }
 }

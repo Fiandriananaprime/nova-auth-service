@@ -3,12 +3,12 @@ import { CsrfService } from "../service/csrf.service.js";
 
 const csrfService = new CsrfService();
 
-export async function requireCsrf(
+export  const requireCsrf = async (
   request: FastifyRequest,
   reply: FastifyReply,
-) {
+) => {
   const token = request.headers["x-csrf-token"];
-  const sessionId = request.sessionId ?? request.cookies?.["session_id"];
+  const sessionId = request.sessionId ;
 
   if (typeof token !== "string") {
     return reply.code(403).send({

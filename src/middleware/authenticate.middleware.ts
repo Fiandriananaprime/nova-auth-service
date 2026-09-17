@@ -25,14 +25,14 @@ export  const authenticate =  (
 
     const Token = request.cookies[cookiesName];
 
-    if(!Token) return reply.code(401).send({error: "Unauthorized"})
+    if(!Token) return reply.code(401).send({error: "Unauthorized, no token provided"})
 
     const tokenData = await accessTokenService.get(Token,purpose === "access" ? "access" : "verification");
-    
-    if(!tokenData) return reply.code(401).send({error:"Unauthorized"})
+
+    if(!tokenData) return reply.code(401).send({error:"Unauthorized, no token provided"})
 
     const session = await sessionRepository.findActiveById(tokenData.sessionId);
-    if(!session) return reply.code(401).send({error: "Unauthorized"})
+    if(!session) return reply.code(401).send({error: "Unauthorized, session dont match"})
 
     request.userId = session.userId
     request.sessionId = session.id

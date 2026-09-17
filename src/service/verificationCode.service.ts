@@ -37,13 +37,13 @@ export class VerificationCodeService {
     const verificationCode: CreateVerificationCode = {
       userId: data.userId,
       channel: data.channel,
-      purpose: VerificationPurpose.email_verification,
+      purpose: data.purpose,
       codeHash,
       expiresAt,
       destination: data.destination,
     };
 
-    await this.verificationCodeRepository.create(
+   const verification= await this.verificationCodeRepository.create(
         verificationCode,
         tx,
     );
@@ -63,6 +63,7 @@ export class VerificationCodeService {
     );
 
     return {
+      VerificationId:verification.id,
       expiresAt,
     };
   }

@@ -8,23 +8,36 @@ export class AccessTokenService {
   async create(data: {
     userId: string;
     sessionId: string;
+    verificationId?:string;
     purpose: "access" | "verification"
   }) {
     const accessToken = randomBytes(32).toString("hex");
 
     const key = data.purpose ==="access" ? `access_token:${accessToken}` : `verification_token:${accessToken}`;
 
+    if(data.purpose ==="access"){
+      await redis.set(
+        key,
+        JSON.stringify({
+          userId: data.userId,
+          sessionId: data.sessionId,
+        }),
+        {
+          EX: this.ttl,
+        },
+      );
+    }
     await redis.set(
       key,
       JSON.stringify({
-        userId: data.userId,
-        sessionId: data.sessionId,
+        userId:data.userId,
+        sessionId:data.sessionId,
+        verificationId:data.verificationId
       }),
       {
-        EX: this.ttl,
-      },
-    );
-
+        EX: this.ttl
+      }
+    )
     return {
       accessToken,
       expiresIn: this.ttl,
@@ -43,6 +56,7 @@ export class AccessTokenService {
     return JSON.parse(data) as {
       userId: string;
       sessionId: string;
+      verificationId:string;
     };
   }
 

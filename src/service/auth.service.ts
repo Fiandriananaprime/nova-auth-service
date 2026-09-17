@@ -7,7 +7,7 @@ import { InvalidCredentialsError } from "../errorHandler/InvalidCredentialError.
 import {
   EmailNotVerifiedError,
   ExpiredVerificationCode,
-  InvalidVerficationCode,
+  InvalidVerificationCode,
   VerificationNotFound,
 } from "../errorHandler/EmailNotVerified.js";
 
@@ -15,6 +15,7 @@ import type { VerificationCodeService } from "./verificationCode.service.js";
 
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
 import type { VerificationCodeRepository } from "../repository/verificationCode.repository.js";
+import { UserNotFoundError } from "../errorHandler/UserError.js";
 
 export class AuthService {
   constructor(
@@ -51,20 +52,36 @@ export class AuthService {
     return safeUser;
   }
 
-  async resendCode(userId:string,target: string) {
-    const isEmail = target.includes("@");
+  async resendCode(userId: string, channel: VerificationChannel) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new UserNotFoundError();
+
+    const target = channel === VerificationChannel.email ? user.email : user.phone;
+    if (!target) throw new UserNotFoundError();
 
     await this.verificationCode.createVerificationCode({
       userId,
-      channel: isEmail ? VerificationChannel.email : VerificationChannel.phone,
+      channel,
       destination:target,
-      purpose:isEmail ? VerificationPurpose.email_verification : VerificationPurpose.phone_verification
+      purpose: channel === VerificationChannel.email
+        ? VerificationPurpose.email_verification
+        : VerificationPurpose.phone_verification,
     })    
   }
 
-  async verifyEmail(id: string, code: string) {
-    const verificationCode =
-      await this.verificationRepository.findById(id);
+  async verifyUserCode(
+    userId: string,
+    code: string,
+    channel: VerificationChannel,
+  ) {
+    const purpose = channel === VerificationChannel.email
+      ? VerificationPurpose.email_verification
+      : VerificationPurpose.phone_verification;
+    const verificationCode = await this.verificationRepository.findLatestActive(
+      userId,
+      channel,
+      purpose,
+    );
 
     if (!verificationCode) {
       throw new VerificationNotFound();
@@ -80,7 +97,14 @@ export class AuthService {
     );
 
     if (!valid) {
-      throw new InvalidVerficationCode();
+      throw new InvalidVerificationCode();
     }
+
+    const consumed = await this.verificationRepository.consume(verificationCode.id);
+    if (!consumed) throw new VerificationNotFound();
+
+    channel === VerificationChannel.email
+      ? await this.userRepository.markEmailAsVerified(userId)
+      : await this.userRepository.markPhoneAsVerified(userId);
   }
 }

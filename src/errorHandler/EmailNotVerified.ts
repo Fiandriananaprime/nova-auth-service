@@ -20,7 +20,7 @@ export class VerificationNotFound extends AppError {
   }
 }
 
-export class InvalidVerficationCode extends AppError {
+export class InvalidVerificationCode extends AppError {
   constructor(){
    super( "INVALID_VERIFICATION_CODE",
     400,

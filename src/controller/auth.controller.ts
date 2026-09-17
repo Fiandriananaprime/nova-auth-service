@@ -5,12 +5,14 @@ import type { RegisterRequest, LoginRequest } from "@Fiandriananaprime/nova_api_
 import { SessionService } from "../service/session.service.js";
 import { parseUserAgent } from "../utils/user-agent.js";
 import { CsrfService } from "../service/csrf.service.js";
+import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
+import { VerificationChannel } from "../dto/VerificationCodeSchema.js";
 
 export class AuthController {
   constructor(
     private readonly userService: UserService,
     private readonly sessionService: SessionService,
-    private readonly authService: AuthService,
+    private readonly authService: AuthService
   ) {}
 
   async register(
@@ -24,7 +26,7 @@ export class AuthController {
 
     reply.setCookie("verification_token",verificationSession.accessToken,{
       httpOnly:true,
-      secure:true,
+      secure: process.env["NODE_ENV"] === "production",
       sameSite:"lax",
       path: "/"
     })
@@ -69,10 +71,23 @@ export class AuthController {
     return reply.status(200).send(user);
   }
 
-  async resendVerificationCode(request: FastifyRequest<{Body:{userId:string,target:string}}>,reply:FastifyReply){
-    const { userId, target } = request.body
-    await this.authService.resendCode(userId,target);
+  async sendEmailVerification(request: FastifyRequest, reply: FastifyReply) {
+    return this.sendVerificationCode(request, reply, "email");
+  }
 
+  async sendPhoneVerification(request: FastifyRequest, reply: FastifyReply) {
+    return this.sendVerificationCode(request, reply, "phone");
+  }
+
+  private async sendVerificationCode(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    channel: "email" | "phone",
+  ) {
+    const userId = request.userId;
+    if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+    await this.authService.resendCode(userId, channel === "email" ? VerificationChannel.email : VerificationChannel.phone);
     return reply.status(204).send();
   }
 
@@ -88,4 +103,36 @@ export class AuthController {
 
     return reply.status(200).send({ csrfToken });
   }
+
+  async verifyEmailCode(
+    request: FastifyRequest<{ Body: { code: string } }>,
+    reply: FastifyReply,
+  ) {
+    return this.verifyCode(request, reply, "email");
+  }
+
+  async verifyPhoneCode(
+    request: FastifyRequest<{ Body: { code: string } }>,
+    reply: FastifyReply,
+  ) {
+    return this.verifyCode(request, reply, "phone");
+  }
+
+  private async verifyCode(
+    request: FastifyRequest<{ Body: { code: string } }>,
+    reply: FastifyReply,
+    channel: "email" | "phone",
+  ) {
+    const {code} = request.body;
+    const userId = request.userId;
+    if (!userId) throw new UnauthorizedError("Verification token missing");
+
+    await this.authService.verifyUserCode(
+      userId,
+      code,
+      channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
+    );
+    return reply.status(204).send();
+  }
+
 }
