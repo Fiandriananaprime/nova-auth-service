@@ -19,4 +19,5 @@ export enum VerificationPurpose {
   phone_verification = "phone_verification",
   two_factor = "two_factor",
   email_change = "email_change",
+  sudo = "sudo"
 }

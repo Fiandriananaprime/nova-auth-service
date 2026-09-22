@@ -37,10 +37,9 @@ export class UserService {
       return await prisma.$transaction(async (tx) => {
         const credentials = await this.userRepository.createUser(tx, {
           id: user.id,
-          firstName: data.firstName,
-          lastName: data.lastName,
           email: data.email,
           password: passwordHash,
+          role: "buyer"
         });
 
       await this.verificationCodeService.createVerificationCode(

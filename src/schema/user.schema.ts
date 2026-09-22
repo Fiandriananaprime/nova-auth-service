@@ -45,7 +45,7 @@ export const requestVerify = {
   type:"object",
   required: ["code"],
   properties:{
-    code:{type:"string"},
+    code:{type:"string", minLength: 6, maxLength: 6, pattern: "^[0-9]{6}$"},
   },
   additionalProperties: false
 } as const

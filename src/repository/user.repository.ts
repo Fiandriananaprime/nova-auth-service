@@ -30,21 +30,17 @@ export class UserRepository {
 
     async createUser(tx:Prisma.TransactionClient,data:createUserDto) {
 
-        const {id, firstName,lastName, email,password } = data
+        const {id, email,password,role } = data
         
         return tx.user.create({
             data: {
                 id,
-                firstName,
-                lastName,
-                role: "buyer",
+                role,
                 email,
                 password,
             },
             select: {
                 id: true,
-                firstName: true,
-                lastName: true,
                 role: true,
                 email: true,
                 status: true,

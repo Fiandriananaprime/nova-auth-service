@@ -1,21 +1,18 @@
 import type { FastifyInstance } from "fastify";
 import type { AuthController } from "../controller/auth.controller.js";
-import { authenticate } from "../middleware/authenticate.middleware.js";
+import { Authenticate } from "../middleware/authenticate.middleware.js";
 import { createUserSchema, requestLogin, requestVerify } from "../schema/user.schema.js";
-import type { AccessTokenService } from "../service/accessToken.service.js";
-import type { SessionRepository } from "../repository/session.repository.js";
+
 import { requireCsrf } from "../middleware/csrf.middleware.js";
 
 export const authRoute = (
   app: FastifyInstance,
   userControler: AuthController,
-  accessTokenService: AccessTokenService,
-  sessionRepository: SessionRepository,
+  authenticate: Authenticate,
+  verification: Authenticate,
   option: { prefix: string },
 ) => {
 
-  const authenticateMiddleware = authenticate(accessTokenService,sessionRepository,"access")
-  const verificationMiddleware = authenticate(accessTokenService,sessionRepository,"verification");
   
   app.register((router) => {
     router.post(
@@ -32,38 +29,32 @@ export const authRoute = (
 
     router.get(
       "/auth/csrf",
-      { preHandler: verificationMiddleware },
+      { preHandler: verification.authenticate.bind(verification) },
       userControler.getCsrf.bind(userControler),
     );
 
-    router.post(
-      "/auth/email/send-verification",
-      { preHandler: [verificationMiddleware, requireCsrf] },
-      userControler.sendEmailVerification.bind(userControler),
+    router.get(
+      "/auth/access/csrf",
+      { preHandler: authenticate.authenticate.bind(authenticate) },
+      userControler.getCsrf.bind(userControler),
     );
 
-    router.post(
-      "/auth/email/resend-verification",
-      { preHandler: [verificationMiddleware, requireCsrf] },
-      userControler.sendEmailVerification.bind(userControler),
+    router.post<{Params: {channel: string}}>(
+      "/auth/:channel/send-verification",
+      { preHandler: [verification.authenticate.bind(verification), requireCsrf] },
+      userControler.sendVerification.bind(userControler),
     );
 
-    router.post(
-      "/auth/phone/send-verification",
-      { preHandler: [verificationMiddleware, requireCsrf] },
-      userControler.sendPhoneVerification.bind(userControler),
-    );
-
-    router.post(
-      "/auth/phone/resend-verification",
-      { preHandler: [verificationMiddleware, requireCsrf] },
-      userControler.sendPhoneVerification.bind(userControler),
+    router.post<{Params: {channel: string}}>(
+      "/auth/:channel/resend-verification",
+      { preHandler: [verification.authenticate.bind(verification), requireCsrf] },
+      userControler.sendVerification.bind(userControler),
     );
 
     router.post<{ Body: { code: string } }>("/auth/email/verify",
       {
         schema: {body:requestVerify},
-        preHandler:[verificationMiddleware,requireCsrf],
+        preHandler:[verification.authenticate.bind(verification),requireCsrf],
       },
       userControler.verifyEmailCode.bind(userControler),
     );
@@ -71,13 +62,25 @@ export const authRoute = (
     router.post<{ Body: { code: string } }>("/auth/phone/verify",
       {
         schema: {body:requestVerify},
-        preHandler:[verificationMiddleware,requireCsrf],
+        preHandler:[verification.authenticate.bind(verification),requireCsrf],
       },
       userControler.verifyPhoneCode.bind(userControler),
     );
 
-    router.post
+    router.get("/auth/me",{
+       preHandler: authenticate.authenticate.bind(authenticate)},
+       userControler.getCurrentUser.bind(userControler))
 
-    router.get("/auth/me",{ preHandler: authenticateMiddleware}, userControler.getCurrentUser.bind(userControler))
-  }, option);
-};
+    router.post<{Params: {channel: string}}>("/auth/sudo/:channel", 
+      { preHandler: [authenticate.authenticate.bind(authenticate), requireCsrf] },
+      userControler.sendSudoVerification.bind(userControler)
+    );
+
+    router.post<{Params: {channel: string}; Body: {code: string}}>("/auth/sudo/:channel/verify", 
+      {
+        schema: { body: requestVerify },
+        preHandler: [authenticate.authenticate.bind(authenticate), requireCsrf],
+      },
+      userControler.verifySudoCode.bind(userControler),
+    );
+  }, option)};

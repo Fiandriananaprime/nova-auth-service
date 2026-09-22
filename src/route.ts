@@ -15,23 +15,34 @@ import { InitiateClient } from "./client/index.js";
 import { VerificationCodeRepository } from "./repository/verificationCode.repository.js";
 import { VerificationCodeService } from "./service/verificationCode.service.js";
 import { InternalRoute } from "./routes/internal.route.js";
+import { Authenticate } from "./middleware/authenticate.middleware.js";
+//import { accountRoute } from "./routes/account.route.js";
  
 
 export const routes = (app: FastifyInstance) => {
+
+  //Dependencies
   const outboxRepository = new OutboxRepository();
   const sessionRepository = new SessionRepository();
   const userRepository = new UserRepository();
   const verificationCodeRepository = new VerificationCodeRepository();
   const eventService = new EventService(outboxRepository);
 
+  // Service
   const accessTokenService = new AccessTokenService();
   const sessionService = new SessionService(sessionRepository, accessTokenService,userRepository);
   const verificationCodeService = new VerificationCodeService(verificationCodeRepository,eventService)
   const authService = new AuthService(userRepository, verificationCodeRepository,verificationCodeService);
   const userService = new UserService(userRepository,InitiateClient(),verificationCodeService);
 
+  // Controller
   const authController = new AuthController(userService, sessionService, authService);
 
-  authRoute(app, authController,accessTokenService,sessionRepository, { prefix: "/api" });
+  //Middleware
+  const authenticateMiddleware = new Authenticate(accessTokenService,sessionRepository,"access")
+  const verificationMiddleware = new Authenticate(accessTokenService,sessionRepository,"verification")
+
+  authRoute(app, authController,authenticateMiddleware,verificationMiddleware, { prefix: "/api" });
+  //accountRoute(app,authController,authenticateMiddleware,{prefix:"/api"});
   InternalRoute(app,authController,{prefix:"/internal"})
 };

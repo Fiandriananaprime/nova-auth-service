@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js"
 import { Prisma } from "../generated/prisma/index.js"
+import { VerificationPurpose } from "../dto/VerificationCodeSchema.js"
 
 import type { CreateVerificationCode } from "../dto/VerificationCodeSchema.js"
 
@@ -18,7 +19,7 @@ export class VerificationCodeRepository {
     async findLatestActive(
         userId: string,
         channel: "email" | "phone",
-        purpose: "email_verification" | "phone_verification",
+        purpose: VerificationPurpose,
     ) {
         return prisma.verificationCode.findFirst({
             where: {
@@ -29,6 +30,23 @@ export class VerificationCodeRepository {
                 expiresAt: { gt: new Date() },
             },
             orderBy: { createdAt: "desc" },
+        });
+    }
+
+    async invalidateActive(
+        userId: string,
+        channel: "email" | "phone",
+        purpose: VerificationPurpose,
+    ) {
+        await prisma.verificationCode.updateMany({
+            where: {
+                userId,
+                channel,
+                purpose,
+                consumedAt: null,
+                expiresAt: { gt: new Date() },
+            },
+            data: { consumedAt: new Date() },
         });
     }
 

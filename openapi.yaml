@@ -80,6 +80,22 @@ paths:
                 required: [csrfToken]
                 properties: { csrfToken: { type: string } }
         '401': { description: Verification session required }
+  /api/auth/access/csrf:
+    get:
+      tags: [Auth]
+      operationId: getAccessCsrf
+      summary: Get a CSRF token for an authenticated access session
+      security: [{ accessCookie: [] }]
+      responses:
+        '200':
+          description: CSRF token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrfToken]
+                properties: { csrfToken: { type: string } }
+        '401': { description: Access session required }
   /api/auth/email/send-verification:
     post:
       tags: [Auth]
@@ -148,6 +164,41 @@ paths:
             schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
       responses:
         '204': { description: Phone verified }
+        '400': { description: Invalid or expired code }
+        '403': { description: Invalid CSRF token }
+  /api/auth/sudo/{channel}:
+    post:
+      tags: [Auth]
+      operationId: sendSudoVerification
+      summary: Send a sudo verification code
+      security: [{ accessCookie: [], csrfHeader: [] }]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [email, phone] }
+      responses:
+        '204': { description: Sudo verification code queued }
+        '400': { description: Unsupported verification channel }
+        '403': { description: Invalid CSRF token }
+  /api/auth/sudo/{channel}/verify:
+    post:
+      tags: [Auth]
+      operationId: verifySudo
+      summary: Verify a sudo security code
+      security: [{ accessCookie: [], csrfHeader: [] }]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [email, phone] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
+      responses:
+        '204': { description: Sudo verification accepted }
         '400': { description: Invalid or expired code }
         '403': { description: Invalid CSRF token }
   /internal/validate:

@@ -37,3 +37,13 @@ export class ExpiredVerificationCode extends AppError {
     )
   }
 }
+
+export class VerificationRateLimitError extends AppError {
+  constructor() {
+    super(
+      "VERIFICATION_RATE_LIMITED",
+      429,
+      "Please wait before requesting another verification code",
+    );
+  }
+}

@@ -56,6 +56,7 @@ enum VerificationPurpose {
   phone_verification
   two_factor
   email_change
+  sudo
 
   @@map("verification_purpose")
 }
@@ -68,7 +69,7 @@ model User {
   phone           String?  @unique @db.VarChar(30)
 
   role            UserRole
-  status          UserStatus
+  status          UserStatus  @default(active)
   adminRole       AdminRole? @map("admin_role")
 
   emailVerified   Boolean @default(false) @map("email_verified")

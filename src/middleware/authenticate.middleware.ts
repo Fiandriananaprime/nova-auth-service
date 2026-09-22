@@ -2,40 +2,44 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { AccessTokenService } from "../service/accessToken.service.js";
 import type { SessionRepository } from "../repository/session.repository.js";
 
-
 declare module "fastify" {
   interface FastifyRequest {
     sessionId?: string;
     userId?: string;
   }
 }
-type AuthPurpose = "access" | "verification"
 
-export  const authenticate =  (
-  accessTokenService: AccessTokenService,
-  sessionRepository: SessionRepository,
-  purpose: AuthPurpose
-) => { 
-  return async (
-    request:FastifyRequest,
-    reply: FastifyReply
-  ) => {
+type AuthPurpose = "access" | "verification";
 
-    const cookiesName = purpose === "access" ? "access_token" : "verification_token";
+export class Authenticate {
+  constructor(
+    private readonly accessTokenService: AccessTokenService,
+    private readonly sessionRepository: SessionRepository,
+    private readonly purpose: AuthPurpose
+  ) {}
 
-    const Token = request.cookies[cookiesName];
+  async authenticate(request: FastifyRequest, reply: FastifyReply) {
+    const cookieName =
+      this.purpose === "access" ? "access_token" : "verification_token";
 
-    if(!Token) return reply.code(401).send({error: "Unauthorized, no token provided"})
+    const token = request.cookies[cookieName];
 
-    const tokenData = await accessTokenService.get(Token,purpose === "access" ? "access" : "verification");
+    if (!token)
+      return reply.code(401).send({ error: "Unauthorized, no token provided" });
 
-    if(!tokenData) return reply.code(401).send({error:"Unauthorized, no token provided"})
+    const tokenData = await this.accessTokenService.get(token, this.purpose);
 
-    const session = await sessionRepository.findActiveById(tokenData.sessionId);
-    if(!session) return reply.code(401).send({error: "Unauthorized, session dont match"})
+    if (!tokenData)
+      return reply.code(401).send({ error: "Unauthorized, invalid token" });
 
-    request.userId = session.userId
-    request.sessionId = session.id
+    const session = await this.sessionRepository.findActiveById(
+      tokenData.sessionId
+    );
+
+    if (!session)
+      return reply.code(401).send({ error: "Unauthorized, session don't match" });
+
+    request.userId = session.userId;
+    request.sessionId = session.id;
   }
-
 }

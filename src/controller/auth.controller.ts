@@ -6,7 +6,7 @@ import { SessionService } from "../service/session.service.js";
 import { parseUserAgent } from "../utils/user-agent.js";
 import { CsrfService } from "../service/csrf.service.js";
 import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
-import { VerificationChannel } from "../dto/VerificationCodeSchema.js";
+import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
 import { redis } from "../database/redis.js";
 
 export class AuthController {
@@ -72,25 +72,37 @@ export class AuthController {
     return reply.status(200).send(user);
   }
 
-  async sendEmailVerification(request: FastifyRequest, reply: FastifyReply) {
-    return this.sendVerificationCode(request, reply, "email");
+  async sendVerification(request: FastifyRequest<{Params:{channel: string}}>, reply: FastifyReply) {
+    const channel = request.params.channel;
+    if (!this.isVerificationChannel(channel)) {
+      return reply.code(400).send({ error: "Unsupported verification channel" });
+    }
+    const purpose = channel === "email" ? VerificationPurpose.email_verification : VerificationPurpose.phone_verification;
+    return this.sendVerificationCode(request, reply,purpose);
   }
 
-  async sendPhoneVerification(request: FastifyRequest, reply: FastifyReply) {
-    return this.sendVerificationCode(request, reply, "phone");
+  async sendSudoVerification(request:FastifyRequest<{Params: {channel: string}}>, reply: FastifyReply){
+    if (!this.isVerificationChannel(request.params.channel)) {
+      return reply.code(400).send({ error: "Unsupported verification channel" });
+    }
+    const purpose = VerificationPurpose.sudo;
+
+    return this.sendVerificationCode(request,reply,purpose)
   }
 
-  private async sendVerificationCode(
-    request: FastifyRequest,
-    reply: FastifyReply,
-    channel: "email" | "phone",
-  ) {
+  private async sendVerificationCode( request: FastifyRequest<{Params:{channel:string}}>, reply: FastifyReply,purpose:VerificationPurpose) {
     const userId = request.userId;
+    const channel = request.params.channel
     if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-    await this.authService.resendCode(userId, channel === "email" ? VerificationChannel.email : VerificationChannel.phone);
+    await this.authService.sendCode(
+      userId, 
+      channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
+      purpose
+    );
     return reply.status(204).send();
   }
+
 
   async getCsrf(request: FastifyRequest, reply: FastifyReply) {
     const sessionId = request.sessionId ;
@@ -119,6 +131,26 @@ export class AuthController {
     return this.verifyCode(request, reply, "phone");
   }
 
+  async verifySudoCode(
+    request: FastifyRequest<{ Params: { channel: string }; Body: { code: string } }>,
+    reply: FastifyReply,
+  ) {
+    const channel = request.params.channel;
+    if (!this.isVerificationChannel(channel)) {
+      return reply.code(400).send({ error: "Unsupported verification channel" });
+    }
+
+    if (!request.userId) throw new UnauthorizedError("Access token missing");
+
+    await this.authService.verifySudoCode(
+      request.userId,
+      request.body.code,
+      channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
+    );
+
+    return reply.status(204).send();
+  }
+
   private async verifyCode(
     request: FastifyRequest<{ Body: { code: string } }>,
     reply: FastifyReply,
@@ -134,6 +166,10 @@ export class AuthController {
       channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
     );
     return reply.status(204).send();
+  }
+
+  private isVerificationChannel(channel: string): channel is "email" | "phone" {
+    return channel === "email" || channel === "phone";
   }
 
   async validateAccessToken(request:FastifyRequest<{Body:{access_token:string}}>) {
@@ -165,4 +201,13 @@ export class AuthController {
     return reply.status(200).send(user)
   }
   
+  /**
+   * async changeEmail(request: FastifyRequest<{Body:{newEmail: string,password: string}}>,reply:FastifyReply){
+    const userId = request.userId;
+    const {newEmail, password} = request.body
+    if(!userId) throw new UnauthorizedError("Unauthorized")
+
+    const user = await this.userService.changeEmail(userId,newEmail,password)
+  }
+   */
 }

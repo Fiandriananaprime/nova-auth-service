@@ -29,7 +29,8 @@ CREATE TYPE verification_purpose AS ENUM (
     'email_verification',
     'phone_verification',
     'two_factor',
-    'email_change'
+    'email_change',
+    'sudo'
 );
 
 
