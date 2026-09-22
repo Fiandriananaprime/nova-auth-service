@@ -29,7 +29,9 @@ CREATE TYPE verification_purpose AS ENUM (
     'email_verification',
     'phone_verification',
     'two_factor',
-    'email_change'
+    'email_change',
+    'phone_change',
+    'sudo'
 );
 
 
@@ -58,6 +60,9 @@ CREATE TABLE users (
     email_verified BOOLEAN NOT NULL DEFAULT false,
     phone_verified BOOLEAN NOT NULL DEFAULT false,
 
+    pending_email VARCHAR(255) UNIQUE,
+    pending_phone VARCHAR(30) UNIQUE,
+
     last_login_at TIMESTAMPTZ(6),
     last_login_ip TEXT,
 
@@ -81,13 +86,13 @@ CREATE TABLE user_sessions (
 
     user_id UUID NOT NULL,
 
-    refresh_token_hash TEXT NOT NULL UNIQUE,
+    refresh_token_hash TEXT UNIQUE,
 
-    device TEXT NOT NULL,
-    browser TEXT NOT NULL,
-    operating_system TEXT NOT NULL,
+    device TEXT,
+    browser TEXT,
+    operating_system TEXT,
 
-    ip_address TEXT NOT NULL,
+    ip_address TEXT,
     location TEXT,
 
     last_active_at TIMESTAMPTZ(6) NOT NULL DEFAULT now(),

@@ -56,47 +56,64 @@ enum VerificationPurpose {
   phone_verification
   two_factor
   email_change
+  phone_change
+  sudo
 
   @@map("verification_purpose")
 }
 
 model User {
-  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  firstName      String      @map("first_name")
-  lastName       String      @map("last_name")
-  email          String      @unique
-  passwordHash   String      @map("password_hash")
-  phone          String?     @unique @db.VarChar(30)
-  role           UserRole
-  status         UserStatus  @default(active)
-  adminRole      AdminRole?  @map("admin_role")
-  avatarUrl      String?     @map("avatar_url")
-  emailVerified  Boolean     @default(false) @map("email_verified")
-  phoneVerified  Boolean     @default(false) @map("phone_verified")
-  lastLoginAt    DateTime?   @map("last_login_at") @db.Timestamptz(6)
-  lastLoginIp    String?     @map("last_login_ip")
-  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  sessions            UserSession[]
-  verificationCodes   VerificationCode[]
-  passwordResetTokens PasswordResetToken[]
-  twoFactorSettings   TwoFactorSettings?
-  twoFactorRecovery   TwoFactorRecoveryCode[]
+  email           String   @unique
+  password        String   @map("password_hash")
+  phone           String?  @unique @db.VarChar(30)
 
-  @@index([role, status], map: "idx_users_role_status")
-  @@index([lastLoginAt(sort: Desc)], map: "idx_users_last_login_at")
+  role            UserRole
+  status          UserStatus  @default(active)
+  adminRole       AdminRole? @map("admin_role")
+
+  emailVerified   Boolean @default(false) @map("email_verified")
+  phoneVerified   Boolean @default(false) @map("phone_verified")
+  pendingEmail    String? @unique @map("pending_email")
+  pendingPhone    String? @unique @map("pending_phone")
+
+  lastLoginAt     DateTime @default(now()) @map("last_login_at") @db.Timestamptz(6)
+  lastLoginIp     String?  @map("last_login_ip")
+
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions              UserSession[]
+  verificationCodes     VerificationCode[]
+  passwordResetTokens   PasswordResetToken[]
+  twoFactorSettings     TwoFactorSettings?
+  twoFactorRecovery     TwoFactorRecoveryCode[]
+
+  @@index([role, status])
+  @@index([lastLoginAt(sort: Desc)])
   @@map("users")
+}
+
+model OutboxEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+
+  @@index([publishedAt], map: "idx_outbox_events_published_at")
+  @@map("outbox_events")
 }
 
 model UserSession {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String    @map("user_id") @db.Uuid
-  refreshTokenHash  String    @unique @map("refresh_token_hash")
-  device            String
-  browser           String
-  operatingSystem   String    @map("operating_system")
-  ipAddress         String    @map("ip_address")
+  refreshTokenHash  String?    @unique @map("refresh_token_hash")
+  device            String?
+  browser           String?
+  operatingSystem   String?    @map("operating_system")
+  ipAddress         String?    @map("ip_address")
   location          String?
   lastActiveAt      DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(6)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -113,10 +130,10 @@ model UserSession {
 
 model VerificationCode {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String?             @map("user_id") @db.Uuid
+  userId      String             @map("user_id") @db.Uuid
   channel     VerificationChannel
   purpose     VerificationPurpose
-  destination String?
+  destination String
   codeHash    String              @map("code_hash")
   expiresAt   DateTime            @map("expires_at") @db.Timestamptz(6)
   consumedAt  DateTime?           @map("consumed_at") @db.Timestamptz(6)

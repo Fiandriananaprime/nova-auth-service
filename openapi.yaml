@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Nova Market Auth Service
-  description: System and monitoring endpoints for the authentication service.
+  description: Internal authentication service contract. Public clients use NovaApiGateway.
   version: 1.0.0
 
 servers:
@@ -11,8 +11,212 @@ servers:
 tags:
   - name: System
     description: Service health, readiness, version, and metrics
+  - name: Auth
+    description: Internal authentication and verification endpoints
+  - name: Internal
+    description: Service-to-service endpoints
 
 paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Register a buyer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created and verification session issued
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+        '409': { description: Email already exists }
+        '422': { description: Invalid request }
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Authenticate a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Authenticated user
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+        '401': { description: Invalid credentials or unverified email }
+  /api/auth/csrf:
+    get:
+      tags: [Auth]
+      operationId: getCsrf
+      summary: Get a CSRF token for a verification session
+      security: [{ verificationCookie: [] }]
+      responses:
+        '200':
+          description: CSRF token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrfToken]
+                properties: { csrfToken: { type: string } }
+        '401': { description: Verification session required }
+  /api/auth/access/csrf:
+    get:
+      tags: [Auth]
+      operationId: getAccessCsrf
+      summary: Get a CSRF token for an authenticated access session
+      security: [{ accessCookie: [] }]
+      responses:
+        '200':
+          description: CSRF token
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrfToken]
+                properties: { csrfToken: { type: string } }
+        '401': { description: Access session required }
+  /api/auth/email/send-verification:
+    post:
+      tags: [Auth]
+      operationId: sendEmailVerification
+      summary: Send an email verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/email/resend-verification:
+    post:
+      tags: [Auth]
+      operationId: resendEmailVerification
+      summary: Resend an email verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/phone/send-verification:
+    post:
+      tags: [Auth]
+      operationId: sendPhoneVerification
+      summary: Send a phone verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/phone/resend-verification:
+    post:
+      tags: [Auth]
+      operationId: resendPhoneVerification
+      summary: Resend a phone verification code
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      responses:
+        '204': { description: Verification code queued }
+        '401': { description: Verification session required }
+        '403': { description: Invalid CSRF token }
+  /api/auth/email/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyEmail
+      summary: Verify an email address
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
+      responses:
+        '204': { description: Email verified }
+        '400': { description: Invalid or expired code }
+        '403': { description: Invalid CSRF token }
+  /api/auth/phone/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyPhone
+      summary: Verify a phone number
+      security: [{ verificationCookie: [], csrfHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
+      responses:
+        '204': { description: Phone verified }
+        '400': { description: Invalid or expired code }
+        '403': { description: Invalid CSRF token }
+  /api/auth/sudo/{channel}:
+    post:
+      tags: [Auth]
+      operationId: sendSudoVerification
+      summary: Send a sudo verification code
+      security: [{ accessCookie: [], csrfHeader: [] }]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [email, phone] }
+      responses:
+        '204': { description: Sudo verification code queued }
+        '400': { description: Unsupported verification channel }
+        '403': { description: Invalid CSRF token }
+  /api/auth/sudo/{channel}/verify:
+    post:
+      tags: [Auth]
+      operationId: verifySudo
+      summary: Verify a sudo security code
+      security: [{ accessCookie: [], csrfHeader: [] }]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [email, phone] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCodeRequest' }
+      responses:
+        '204': { description: Sudo verification accepted }
+        '400': { description: Invalid or expired code }
+        '403': { description: Invalid CSRF token }
+  /internal/validate:
+    post:
+      tags: [Internal]
+      operationId: validateAccessToken
+      summary: Validate an access token for another service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_token]
+              properties: { access_token: { type: string } }
+      responses:
+        '200': { description: Token validation result }
+        '401': { description: Invalid token }
   /health:
     get:
       tags: [System]
@@ -72,7 +276,126 @@ paths:
                 type: string
 
 components:
+  securitySchemes:
+    verificationCookie:
+      type: apiKey
+      in: cookie
+      name: verification_token
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: Insufficient permissions.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    ValidationError:
+      description: Validation error.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
   schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: string, example: VALIDATION_ERROR}
+            message: {type: string, example: The email field is invalid.}
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: {type: string}
+                  message: {type: string}
+    User:
+      type: object
+      required: [id, firstName, lastName, email, role, status]
+      properties:
+        id: {type: string, format: uuid}
+        firstName: {type: string, example: Rakoto}
+        lastName: {type: string, example: Andry}
+        email: {type: string, format: email}
+        phone: {type: string, nullable: true}
+        role: {$ref: '#/components/schemas/UserRole'}
+        status: {$ref: '#/components/schemas/UserStatus'}
+        avatarUrl: {type: string, nullable: true}
+        emailVerified: {type: boolean, default: false}
+        phoneVerified: {type: boolean, default: false}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        lastLoginAt: {type: string, format: date-time, nullable: true}
+        addresses:
+          type: array
+          items: {$ref: '#/components/schemas/Address'}
+    
+    Address:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        label: {type: string, example: Home}
+        recipientName: {type: string, example: Rakoto Andry}
+        phone: {type: string, example: '+261341234567'}
+        street: {type: string}
+        district: {type: string}
+        city: {type: string, example: Antananarivo}
+        region: {type: string, example: Analamanga}
+        postalCode: {type: string, nullable: true, example: '101'}
+        latitude: {type: number, nullable: true}
+        longitude: {type: number, nullable: true}
+        instructions: {type: string, nullable: true}
+        isDefault: {type: boolean, default: false}
+
+    UserRole:
+      type: string
+      enum:
+      - buyer
+      - seller
+      - admin
+
+    UserStatus:
+      type: string
+      enum: [active, suspended]
+
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [firstName, lastName, email, password]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 100 }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+        remember: { type: boolean, default: false }
+    VerificationCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, minLength: 6, maxLength: 6 }
     HealthResponse:
       type: object
       required: [status]
