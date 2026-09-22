@@ -3,6 +3,7 @@ import argon2 from "argon2";
 import { SessionRepository } from "../repository/session.repository.js";
 import { AccessTokenService } from "./accessToken.service.js";
 import type { UserRepository } from "../repository/user.repository.js";
+import type { Session } from "../types/session.js";
 
 export class SessionService {
   constructor(
@@ -78,8 +79,15 @@ export class SessionService {
     };
   }
 
-  async getSessions(userId: string) {
+  async getSessions(userId: string, sessionId?: string): Promise<Session[]> {
     const sessions = await this.sessionRepository.findByUserId(userId);
+
+    if (sessionId) {
+      return sessions.map((session) => ({
+        ...session,
+        current: session.id === sessionId,
+      }));
+    }
     return sessions;
   }
 }

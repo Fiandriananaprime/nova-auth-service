@@ -210,7 +210,8 @@ export class AuthController {
 
   async getCurrentUser(request:FastifyRequest,reply:FastifyReply){
     const userId = request.userId;
-
+    const sessionId = request.sessionId;
+    if(!sessionId) throw new UnauthorizedError("Unauthorized");
     if(!userId) throw new UnauthorizedError("Unauthorized");
     const user = await this.userService.findById(userId)
 

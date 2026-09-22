@@ -54,8 +54,10 @@ export class AccountController {
 
     async getSessions(request: FastifyRequest, reply: FastifyReply) {
         const userId = request.userId;
+        const sessionId = request.sessionId;
+        if(!sessionId) throw new UnauthorizedError("Unauthorized");
         if(!userId) throw new UnauthorizedError("Unauthorized");
-        const sessions = await this.sessionService.getSessions(userId);
+        const sessions = await this.sessionService.getSessions(userId,sessionId);
         return reply.status(200).send({sessions});
     }
 }
