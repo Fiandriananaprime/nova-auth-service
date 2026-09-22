@@ -9,7 +9,7 @@ declare module "fastify" {
   }
 }
 
-type AuthPurpose = "access" | "verification";
+type AuthPurpose = "access" | "verification" | "sudo";
 
 export class Authenticate {
   constructor(
@@ -19,8 +19,11 @@ export class Authenticate {
   ) {}
 
   async authenticate(request: FastifyRequest, reply: FastifyReply) {
-    const cookieName =
-      this.purpose === "access" ? "access_token" : "verification_token";
+    const cookieName = this.purpose === "access"
+      ? "access_token"
+      : this.purpose === "verification"
+        ? "verification_token"
+        : "sudo_mode";
 
     const token = request.cookies[cookieName];
 
@@ -41,5 +44,23 @@ export class Authenticate {
 
     request.userId = session.userId;
     request.sessionId = session.id;
+  }
+
+  async verifySudoMode(request: FastifyRequest, reply: FastifyReply) {
+    const sudoModeToken = request.cookies["sudo_mode"];
+    if (!sudoModeToken) {
+      return reply.code(401).send({ error: "Unauthorized, sudo mode not enabled" });
+    }
+
+    const tokenData = await this.accessTokenService.get(sudoModeToken, "sudo");
+
+    if (!tokenData) {
+      return reply.code(401).send({ error: "Unauthorized, invalid sudo mode token" });
+    }
+
+    const session = await this.sessionRepository.findActiveById(tokenData.sessionId);
+    if (!session) {
+      return reply.code(401).send({ error: "Unauthorized, session don't match" });
+    }
   }
 }

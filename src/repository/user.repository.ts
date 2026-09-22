@@ -16,6 +16,8 @@ export class UserRepository {
                 adminRole: true,
                 emailVerified: true,
                 phoneVerified: true,
+                pendingEmail: true,
+                pendingPhone: true,
             },
         });
     }
@@ -64,5 +66,47 @@ export class UserRepository {
 
     async updateLastLoginAt(id: string){
         await prisma.user.update({where:{id}, data:{lastLoginAt:new Date()}})
+    }
+
+    async changeEmail(id: string, email: string){
+        await prisma.user.update({
+            where: { id },
+            data: { email, emailVerified: true },
+        });
+    }
+
+    async changePendingEmail(id: string, email: string){
+        await prisma.user.update({
+            where: { id },
+            data: { pendingEmail: email },
+        });
+    }
+
+    async clearPendingEmail(id: string){
+        await prisma.user.update({
+            where: { id },
+            data: { pendingEmail: null },
+        });
+    }
+
+    async changePhone(id: string, phone: string){
+        await prisma.user.update({
+            where: { id },
+            data: { phone, phoneVerified: true },
+        });
+    }
+
+    async changePendingPhone(id: string, phone: string){
+        await prisma.user.update({
+            where: { id },
+            data: { pendingPhone: phone },
+        });
+    }
+
+    async clearPendingPhone(id: string){
+        await prisma.user.update({
+            where: { id },
+            data: { pendingPhone: null },
+        });
     }
 }

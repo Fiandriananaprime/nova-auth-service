@@ -18,6 +18,8 @@ import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCod
 import type { VerificationCodeRepository } from "../repository/verificationCode.repository.js";
 import { UserNotFoundError } from "../errorHandler/UserError.js";
 
+
+const RESEND_COOLDOWN_MS = 30_000;
 export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
@@ -62,7 +64,8 @@ export class AuthService {
       channel,
       purpose,
     );
-    if (latestCode && latestCode.createdAt.getTime() > Date.now() - 30_000) {
+
+    if (latestCode && latestCode.createdAt.getTime() > Date.now() - RESEND_COOLDOWN_MS) {
       throw new VerificationRateLimitError();
     }
 
@@ -115,5 +118,23 @@ export class AuthService {
     channel: VerificationChannel,
   ) {
     await this.verifyCode(userId, code, channel, VerificationPurpose.sudo);
+  }
+
+  async confirmEmailChange(userId: string, code: string) {
+    await this.verifyCode(userId, code, VerificationChannel.email, VerificationPurpose.email_change);
+    const user = await this.userRepository.findById(userId);
+    if(!user) throw new UserNotFoundError();
+    if(!user.pendingEmail) throw new UserNotFoundError();
+    await this.userRepository.changeEmail(userId, user.pendingEmail);
+    await this.userRepository.clearPendingEmail(userId);
+  }
+
+  async confirmPhoneChange(userId: string, code: string) {
+    await this.verifyCode(userId, code, VerificationChannel.phone, VerificationPurpose.phone_change);
+    const user = await this.userRepository.findById(userId);
+    if(!user) throw new UserNotFoundError();
+    if(!user.pendingPhone) throw new UserNotFoundError();
+    await this.userRepository.changePhone(userId, user.pendingPhone);
+    await this.userRepository.clearPendingPhone(userId);
   }
 }

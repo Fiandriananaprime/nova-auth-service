@@ -16,7 +16,8 @@ import { VerificationCodeRepository } from "./repository/verificationCode.reposi
 import { VerificationCodeService } from "./service/verificationCode.service.js";
 import { InternalRoute } from "./routes/internal.route.js";
 import { Authenticate } from "./middleware/authenticate.middleware.js";
-//import { accountRoute } from "./routes/account.route.js";
+import { accountRoute } from "./routes/account.route.js";
+import { AccountController } from "./controller/account.controller.js";
  
 
 export const routes = (app: FastifyInstance) => {
@@ -36,13 +37,16 @@ export const routes = (app: FastifyInstance) => {
   const userService = new UserService(userRepository,InitiateClient(),verificationCodeService);
 
   // Controller
-  const authController = new AuthController(userService, sessionService, authService);
+  const authController = new AuthController(userService, sessionService, authService, accessTokenService);
+  const accountController = new AccountController(userService,authService);
 
   //Middleware
   const authenticateMiddleware = new Authenticate(accessTokenService,sessionRepository,"access")
   const verificationMiddleware = new Authenticate(accessTokenService,sessionRepository,"verification")
+  const sudoMiddleware = new Authenticate(accessTokenService,sessionRepository,"sudo")
 
+  //Routes
   authRoute(app, authController,authenticateMiddleware,verificationMiddleware, { prefix: "/api" });
-  //accountRoute(app,authController,authenticateMiddleware,{prefix:"/api"});
+  accountRoute(app,accountController,authenticateMiddleware,sudoMiddleware,{prefix:"/api"});
   InternalRoute(app,authController,{prefix:"/internal"})
 };

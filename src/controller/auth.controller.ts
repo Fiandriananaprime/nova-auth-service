@@ -8,12 +8,14 @@ import { CsrfService } from "../service/csrf.service.js";
 import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
 import { redis } from "../database/redis.js";
+import { AccessTokenService } from "../service/accessToken.service.js";
 
 export class AuthController {
   constructor(
     private readonly userService: UserService,
     private readonly sessionService: SessionService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly accessTokenService: AccessTokenService,
   ) {}
 
   async register(
@@ -147,6 +149,20 @@ export class AuthController {
       request.body.code,
       channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
     );
+
+    if (!request.sessionId) throw new UnauthorizedError("Session missing");
+    const sudoToken = await this.accessTokenService.create({
+      userId: request.userId,
+      sessionId: request.sessionId,
+      purpose: "sudo",
+    });
+    reply.setCookie("sudo_mode", sudoToken.accessToken, {
+      httpOnly: true,
+      secure: process.env["NODE_ENV"] === "production",
+      sameSite: "lax",
+      path: "/api/account",
+      maxAge: sudoToken.expiresIn,
+    });
 
     return reply.status(204).send();
   }

@@ -75,4 +75,50 @@ export class UserService {
       phoneVerified: user.phoneVerified,
     };
   }
+
+  async requestEmailChange(id: string, email: string){
+    const user = await this.userRepository.findById(id);
+    const existingUser = await this.userRepository.findByEmail(email);
+
+    if(!user) throw new UserNotFoundError()
+    if(existingUser) throw new UserAlreadyExists()
+
+    try {
+      await prisma.$transaction(async (tx) => {
+      await this.userRepository.changePendingEmail(id, email);
+      await this.verificationCodeService.createVerificationCode(
+          {
+            userId: user.id,
+            channel:VerificationChannel.email,
+            destination:email,
+            purpose:VerificationPurpose.email_change
+          },
+          tx,
+        );
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async requestPhoneChange(id: string, phone: string){
+    const user = await this.userRepository.findById(id);
+    const existingUser = await this.userRepository.findByPhone(phone);
+
+    if(!user) throw new UserNotFoundError();
+    if(existingUser) throw new UserAlreadyExists();
+
+    await prisma.$transaction(async (tx) => {
+      await this.userRepository.changePendingPhone(id, phone);
+      await this.verificationCodeService.createVerificationCode(
+        {
+          userId: user.id,
+          channel: VerificationChannel.phone,
+          destination: phone,
+          purpose: VerificationPurpose.phone_change,
+        },
+        tx,
+      );
+    });
+  }
 }

@@ -30,6 +30,7 @@ CREATE TYPE verification_purpose AS ENUM (
     'phone_verification',
     'two_factor',
     'email_change',
+    'phone_change',
     'sudo'
 );
 
@@ -58,6 +59,9 @@ CREATE TABLE users (
 
     email_verified BOOLEAN NOT NULL DEFAULT false,
     phone_verified BOOLEAN NOT NULL DEFAULT false,
+
+    pending_email VARCHAR(255) UNIQUE,
+    pending_phone VARCHAR(30) UNIQUE,
 
     last_login_at TIMESTAMPTZ(6),
     last_login_ip TEXT,
