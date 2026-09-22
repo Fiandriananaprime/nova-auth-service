@@ -2,10 +2,12 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { UserService } from "../service/user.service.js";
 import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
 import type { AuthService } from "../service/auth.service.js";
+import type { SessionService } from "../service/session.service.js";
 
 export class AccountController {
     constructor(
         private readonly userService: UserService,
+        private readonly sessionService: SessionService,
         private readonly authService: AuthService
     ) {}
 
@@ -48,5 +50,12 @@ export class AccountController {
         const {currentPassword, newPassword} = request.body;
         await this.authService.changePassword(userId,currentPassword,newPassword);
         return reply.status(204).send();
+    }
+
+    async getSessions(request: FastifyRequest, reply: FastifyReply) {
+        const userId = request.userId;
+        if(!userId) throw new UnauthorizedError("Unauthorized");
+        const sessions = await this.sessionService.getSessions(userId);
+        return reply.status(200).send({sessions});
     }
 }

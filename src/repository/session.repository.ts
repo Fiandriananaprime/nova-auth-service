@@ -84,4 +84,16 @@ export class SessionRepository {
     });
   }
 
+  async findByUserId(userId: string) {
+    return prisma.userSession.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      orderBy: {
+        lastActiveAt: "desc",
+      },
+    });
+  }
+
 }

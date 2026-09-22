@@ -77,4 +77,9 @@ export class SessionService {
       accessTokenExpiresIn: expiresIn,
     };
   }
+
+  async getSessions(userId: string) {
+    const sessions = await this.sessionRepository.findByUserId(userId);
+    return sessions;
+  }
 }
