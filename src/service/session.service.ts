@@ -90,4 +90,10 @@ export class SessionService {
     }
     return sessions;
   }
+
+  async revokeSession(sessionId: string) {
+    const session = await this.sessionRepository.findActiveById(sessionId);
+    if (!session) throw new Error("Session not found or already revoked");
+    await this.sessionRepository.revoke(sessionId);
+  }
 }
