@@ -18,6 +18,15 @@ export class UserService {
     private readonly verificationCodeService: VerificationCodeService,
   ) {}
 
+  private isStrongPassword(password: string) {
+    return (
+      password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /\d/.test(password) &&
+      /[^A-Za-z0-9]/.test(password)
+    );
+  }
   async createUser(data: RegisterRequest) {
     const existingUser = await this.userRepository.findByEmail(data.email);
 
@@ -30,7 +39,11 @@ export class UserService {
       lastName: data.lastName,
       email: data.email,
     });
-
+    
+    if(!this.isStrongPassword(data.password)){
+      await this.userClient.deleteUser(user.id);
+      throw new Error("Password does not meet strength requirements");
+    }
     try {
       const passwordHash = await argon2.hash(data.password);
 

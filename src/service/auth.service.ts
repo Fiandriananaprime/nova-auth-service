@@ -3,7 +3,7 @@ import argon2 from "argon2";
 import { UserRepository } from "../repository/user.repository.js";
 
 
-import { InvalidCredentialsError } from "../errorHandler/InvalidCredentialError.js";
+import { InvalidCredentialsError, InvalidPasswordError } from "../errorHandler/InvalidCredentialError.js";
 import {
   EmailNotVerifiedError,
   ExpiredVerificationCode,
@@ -136,5 +136,16 @@ export class AuthService {
     if(!user.pendingPhone) throw new UserNotFoundError();
     await this.userRepository.changePhone(userId, user.pendingPhone);
     await this.userRepository.clearPendingPhone(userId);
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.userRepository.findAccountById(userId);
+    if(!user) throw new UserNotFoundError();
+
+    const validPassword = await argon2.verify(user.password, currentPassword);
+    if (!validPassword) throw new InvalidPasswordError();
+
+    const newPasswordHash = await argon2.hash(newPassword);
+    await this.userRepository.updatePassword(userId, newPasswordHash);
   }
 }

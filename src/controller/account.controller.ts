@@ -41,4 +41,12 @@ export class AccountController {
         await this.authService.confirmPhoneChange(userId, request.body.code);
         return reply.status(204).send();
     }
+
+    async changePassword(request: FastifyRequest<{Body:{currentPassword: string, newPassword: string}}>,reply: FastifyReply){
+        const userId = request.userId;
+        if(!userId) throw new UnauthorizedError("Unauthorized");
+        const {currentPassword, newPassword} = request.body;
+        await this.authService.changePassword(userId,currentPassword,newPassword);
+        return reply.status(204).send();
+    }
 }

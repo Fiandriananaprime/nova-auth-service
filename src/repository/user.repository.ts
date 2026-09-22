@@ -21,6 +21,10 @@ export class UserRepository {
             },
         });
     }
+
+    async findAccountById(id: string) {
+        return prisma.user.findUnique({where: { id }});
+    }
     async findByEmail(email:string){
         return prisma.user.findUnique({where:{email}})
     }
@@ -107,6 +111,13 @@ export class UserRepository {
         await prisma.user.update({
             where: { id },
             data: { pendingPhone: null },
+        });
+    }
+
+    async updatePassword(id: string, passwordHash: string){
+        await prisma.user.update({
+            where: { id },
+            data: { password: passwordHash },
         });
     }
 }

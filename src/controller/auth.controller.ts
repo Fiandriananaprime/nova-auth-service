@@ -216,14 +216,4 @@ export class AuthController {
 
     return reply.status(200).send(user)
   }
-  
-  /**
-   * async changeEmail(request: FastifyRequest<{Body:{newEmail: string,password: string}}>,reply:FastifyReply){
-    const userId = request.userId;
-    const {newEmail, password} = request.body
-    if(!userId) throw new UnauthorizedError("Unauthorized")
-
-    const user = await this.userService.changeEmail(userId,newEmail,password)
-  }
-   */
 }

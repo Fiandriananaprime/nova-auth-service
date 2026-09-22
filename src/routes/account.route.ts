@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Authenticate } from "../middleware/authenticate.middleware.js";
 import { requireCsrf } from "../middleware/csrf.middleware.js";
 import type { AccountController } from "../controller/account.controller.js";
-import { changeRequest, codeRequest, phoneChangeRequest } from "../schema/account.schema.js";
+import { changeRequest, codeRequest, phoneChangeRequest,requestChangePassword } from "../schema/account.schema.js";
 
 export const accountRoute = (
   app: FastifyInstance,
@@ -33,6 +33,12 @@ export const accountRoute = (
         "/account/phone/confirm",
         {schema: {body: codeRequest}, preHandler: [auth.authenticate.bind(auth), requireCsrf]},
         userControler.confirmPhoneChange.bind(userControler),
+      );
+
+      route.patch<{Body:{currentPassword: string, newPassword: string}}>(
+        "/account/password",
+        {schema: {body: requestChangePassword}, preHandler: [auth.authenticate.bind(auth), requireCsrf]},
+        userControler.changePassword.bind(userControler),
       );
     },option)
   }
