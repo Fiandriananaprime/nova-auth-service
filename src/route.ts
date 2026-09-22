@@ -38,7 +38,7 @@ export const routes = (app: FastifyInstance) => {
 
   // Controller
   const authController = new AuthController(userService, sessionService, authService, accessTokenService);
-  const accountController = new AccountController(userService,authService);
+  const accountController = new AccountController(userService,sessionService,authService);
 
   //Middleware
   const authenticateMiddleware = new Authenticate(accessTokenService,sessionRepository,"access")

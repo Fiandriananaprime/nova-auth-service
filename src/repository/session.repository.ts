@@ -1,5 +1,6 @@
 
 import { prisma } from "../database/prisma.js";
+import type { Session } from "../types/session.js";
 
 export class SessionRepository {
   async create(
@@ -82,6 +83,30 @@ export class SessionRepository {
         revokedAt: new Date(),
       },
     });
+  }
+
+  async findByUserId(userId: string): Promise<Session[]> {
+
+    const sessions = await prisma.userSession.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      orderBy: {
+        lastActiveAt: "desc",
+      },
+    });
+    return sessions.map((session) => ({
+      id: session.id,
+      device: session.device ?? "",
+      browser: session.browser ?? "",
+      operatingSystem: session.operatingSystem ?? "",
+      ipAddress: session.ipAddress ?? "",
+      location: session.location ?? null,
+      lastActiveAt: session.lastActiveAt.toISOString(),
+      createdAt: session.createdAt.toISOString(),
+      current: false,
+    }));
   }
 
 }

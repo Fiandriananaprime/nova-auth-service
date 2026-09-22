@@ -40,5 +40,8 @@ export const accountRoute = (
         {schema: {body: requestChangePassword}, preHandler: [auth.authenticate.bind(auth), requireCsrf]},
         userControler.changePassword.bind(userControler),
       );
+
+      route.get("/account/sessions", { preHandler: auth.authenticate.bind(auth) }, userControler.getSessions.bind(userControler));
+      route.delete<{Params:{sessionId: string}}>("/account/sessions/:sessionId", { preHandler: auth.authenticate.bind(auth) }, userControler.revokeSession.bind(userControler));
     },option)
   }
