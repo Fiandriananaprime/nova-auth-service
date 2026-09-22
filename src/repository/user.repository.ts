@@ -4,8 +4,20 @@ import type { createUserDto } from "../dto/UserSchema.js";
 
 export class UserRepository {
 
-    async findById(id:string){
-        return prisma.user.findUnique({where:{id}})
+    async findById(id: string) {
+        return prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                phone: true,
+                role: true,
+                status: true,
+                adminRole: true,
+                emailVerified: true,
+                phoneVerified: true,
+            },
+        });
     }
     async findByEmail(email:string){
         return prisma.user.findUnique({where:{email}})

@@ -9,7 +9,7 @@ import { UserRepository } from "../repository/user.repository.js";
 import { UserClient } from "../client/user.client.js";
 import { VerificationCodeService } from "./verificationCode.service.js";
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
-import type { User } from "@Fiandriananaprime/nova_api_type";
+import type { AuthMe } from "../types/user.js";
 
 export class UserService {
   constructor(
@@ -61,17 +61,19 @@ export class UserService {
     }
   }
 
-  async findById(id:string): Promise<User>{
-    const user = await this.userRepository.findById(id)
+  async findById(userId:string): Promise<AuthMe>{
+    const user = await this.userRepository.findById(userId)
     if(!user) throw new UserNotFoundError();
     
-    const { address } = await this.userClient.getUserAddresses(id);
     return {
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-      lastLoginAt: user.lastLoginAt.toISOString(),
-      addresses: address
-    }
+      userId: user.id,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      adminRole: user.adminRole,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+    };
   }
 }

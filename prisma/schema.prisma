@@ -61,31 +61,33 @@ enum VerificationPurpose {
 }
 
 model User {
-  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  firstName      String      @map("first_name")
-  lastName       String      @map("last_name")
-  email          String      @unique
-  password   String      @map("password_hash")
-  phone          String?     @unique @db.VarChar(30)
-  role           UserRole
-  status         UserStatus  @default(active)
-  adminRole      AdminRole?  @map("admin_role")
-  avatarUrl      String?     @map("avatar_url")
-  emailVerified  Boolean     @default(false) @map("email_verified")
-  phoneVerified  Boolean     @default(false) @map("phone_verified")
-  lastLoginAt    DateTime    @default(now()) @map("last_login_at") @db.Timestamptz(6)
-  lastLoginIp    String?     @map("last_login_ip")
-  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  sessions            UserSession[]
-  verificationCodes   VerificationCode[]
-  passwordResetTokens PasswordResetToken[]
-  twoFactorSettings   TwoFactorSettings?
-  twoFactorRecovery   TwoFactorRecoveryCode[]
+  email           String   @unique
+  password        String   @map("password_hash")
+  phone           String?  @unique @db.VarChar(30)
 
-  @@index([role, status], map: "idx_users_role_status")
-  @@index([lastLoginAt(sort: Desc)], map: "idx_users_last_login_at")
+  role            UserRole
+  status          UserStatus
+  adminRole       AdminRole? @map("admin_role")
+
+  emailVerified   Boolean @default(false) @map("email_verified")
+  phoneVerified   Boolean @default(false) @map("phone_verified")
+
+  lastLoginAt     DateTime @default(now()) @map("last_login_at") @db.Timestamptz(6)
+  lastLoginIp     String?  @map("last_login_ip")
+
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions              UserSession[]
+  verificationCodes     VerificationCode[]
+  passwordResetTokens   PasswordResetToken[]
+  twoFactorSettings     TwoFactorSettings?
+  twoFactorRecovery     TwoFactorRecoveryCode[]
+
+  @@index([role, status])
+  @@index([lastLoginAt(sort: Desc)])
   @@map("users")
 }
 
