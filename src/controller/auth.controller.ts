@@ -208,6 +208,21 @@ export class AuthController {
     };
   }
 
+  async validateCsrf(request: FastifyRequest<{ Body: { access_token: string; csrf_token: string } }>) {
+    const data = await redis.get(`access_token:${request.body.access_token}`);
+
+    if (!data) {
+      throw new UnauthorizedError("Invalid access token");
+    }
+
+    const session = JSON.parse(data) as { sessionId: string };
+    const csrfService = new CsrfService();
+
+    return {
+      valid: await csrfService.verify(session.sessionId, request.body.csrf_token),
+    };
+  }
+
   async getCurrentUser(request:FastifyRequest,reply:FastifyReply){
     const userId = request.userId;
     const sessionId = request.sessionId;
