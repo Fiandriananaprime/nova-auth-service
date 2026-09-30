@@ -217,6 +217,35 @@ paths:
       responses:
         '200': { description: Token validation result }
         '401': { description: Invalid token }
+
+  /internal/validate-csrf:
+    post:
+      tags: [Internal]
+      operationId: validateCsrfToken
+      summary: Validate a CSRF token for the API gateway
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_token, csrf_token]
+              additionalProperties: false
+              properties:
+                access_token: { type: string }
+                csrf_token: { type: string }
+      responses:
+        '200':
+          description: CSRF validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid]
+                properties:
+                  valid: { type: boolean }
+        '401': { description: Invalid or expired access token or CSRF token }
+  
   /health:
     get:
       tags: [System]
