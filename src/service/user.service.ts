@@ -123,4 +123,33 @@ export class UserService {
 
     await this.userRepository.changePendingPhone(id, phone);
   }
-}
+
+  async findByEmail(email:string): Promise<AuthMe>{
+    const user = await this.userRepository.findByEmail(email)
+    if(!user) throw new UserNotFoundError();
+    return {
+      userId: user.id,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      adminRole: user.adminRole,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+    };
+  }
+
+  async findByPhone(phone:string): Promise<AuthMe>{
+    const user = await this.userRepository.findByPhone(phone)
+    if(!user) throw new UserNotFoundError();
+    return {
+      userId: user.id,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      adminRole: user.adminRole,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+    };
+  }}

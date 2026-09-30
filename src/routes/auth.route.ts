@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { AuthController } from "../controller/auth.controller.js";
 import { Authenticate } from "../middleware/authenticate.middleware.js";
 import { createUserSchema, requestLogin, requestVerify } from "../schema/user.schema.js";
@@ -39,13 +39,17 @@ export const authRoute = (
       userControler.getCsrf.bind(userControler),
     );
 
+    router.post<{Body: {email: string}}>("/auth/email/send-verification",userControler.sendEmailVerification.bind(userControler));
+    router.post<{Body: {phone: string}}>("/auth/phone/send-verification",userControler.sendPhoneVerification.bind(userControler));
+
+    
     router.post<{Params: {channel: string}}>(
-      "/auth/:channel/send-verification",
+      "/auth/:channel/resend-verification",
       { preHandler: [verification.authenticate.bind(verification), requireCsrf] },
-      async (request, reply) => {
+      async (request:FastifyRequest<{Params: {channel: string}}>, reply) => {
         const channel = request.params.channel;
-        if (channel === "email") return userControler.sendEmailVerification(request, reply);
-        if (channel === "phone") return userControler.sendPhoneVerification(request, reply);
+        if (channel === "email") return userControler.resendEmailVerification(request, reply);
+        if (channel === "phone") return userControler.resendPhoneVerification(request, reply);
         return reply.code(400).send({ error: "Unsupported verification channel" });
       },
     );
@@ -53,10 +57,10 @@ export const authRoute = (
     router.post<{Params: {channel: string}}>(
       "/auth/:channel/resend-verification",
       { preHandler: [verification.authenticate.bind(verification), requireCsrf] },
-      async (request, reply) => {
+      async (request:FastifyRequest<{Params: {channel: string}}>, reply) => {
         const channel = request.params.channel;
-        if (channel === "email") return userControler.sendEmailVerification(request, reply);
-        if (channel === "phone") return userControler.sendPhoneVerification(request, reply);
+        if (channel === "email") return userControler.resendEmailVerification(request, reply);
+        if (channel === "phone") return userControler.resendPhoneVerification(request, reply);
         return reply.code(400).send({ error: "Unsupported verification channel" });
       },
     );
