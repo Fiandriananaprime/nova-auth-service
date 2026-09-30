@@ -3,6 +3,7 @@ import type { UserService } from "../service/user.service.js";
 import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
 import type { AuthService } from "../service/auth.service.js";
 import type { SessionService } from "../service/session.service.js";
+import { VerificationPurpose } from "../dto/VerificationCodeSchema.js";
 
 export class AccountController {
     constructor(
@@ -34,6 +35,7 @@ export class AccountController {
         const userId = request.userId;
         if(!userId) throw new UnauthorizedError("Unauthorized");
         await this.userService.requestPhoneChange(userId, request.body.phone);
+        await this.authService.sendPhoneCode(userId, VerificationPurpose.phone_change);
         return reply.status(204).send();
     }
 

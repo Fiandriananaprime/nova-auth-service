@@ -100,7 +100,7 @@ paths:
     post:
       tags: [Auth]
       operationId: sendEmailVerification
-      summary: Send an email verification code
+      summary: Send an email verification code through the email flow
       security: [{ verificationCookie: [], csrfHeader: [] }]
       responses:
         '204': { description: Verification code queued }
@@ -120,10 +120,10 @@ paths:
     post:
       tags: [Auth]
       operationId: sendPhoneVerification
-      summary: Send a phone verification code
+      summary: Ask the mock mobile-money provider to send a phone verification code
       security: [{ verificationCookie: [], csrfHeader: [] }]
       responses:
-        '204': { description: Verification code queued }
+        '204': { description: Verification request accepted; the OTP is never returned by auth-service }
         '401': { description: Verification session required }
         '403': { description: Invalid CSRF token }
   /api/auth/phone/resend-verification:
@@ -155,7 +155,7 @@ paths:
     post:
       tags: [Auth]
       operationId: verifyPhone
-      summary: Verify a phone number
+      summary: Verify a phone number through the mock mobile-money provider
       security: [{ verificationCookie: [], csrfHeader: [] }]
       requestBody:
         required: true

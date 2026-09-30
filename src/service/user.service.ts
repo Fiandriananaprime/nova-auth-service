@@ -121,17 +121,6 @@ export class UserService {
     if(!user) throw new UserNotFoundError();
     if(existingUser) throw new UserAlreadyExists();
 
-    await prisma.$transaction(async (tx) => {
-      await this.userRepository.changePendingPhone(id, phone);
-      await this.verificationCodeService.createVerificationCode(
-        {
-          userId: user.id,
-          channel: VerificationChannel.phone,
-          destination: phone,
-          purpose: VerificationPurpose.phone_change,
-        },
-        tx,
-      );
-    });
+    await this.userRepository.changePendingPhone(id, phone);
   }
 }
