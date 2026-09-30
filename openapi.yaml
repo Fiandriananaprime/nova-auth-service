@@ -111,8 +111,6 @@ paths:
               properties: { email: { type: string, format: email } }
       responses:
         '204': { description: Verification code queued }
-        '401': { description: Verification session required }
-        '403': { description: Invalid CSRF token }
   /api/auth/email/resend-verification:
     post:
       tags: [Auth]
@@ -138,8 +136,6 @@ paths:
               properties: { phone: { type: string } }
       responses:
         '204': { description: Verification request accepted; the OTP is never returned by auth-service }
-        '401': { description: Verification session required }
-        '403': { description: Invalid CSRF token }
   /api/auth/phone/resend-verification:
     post:
       tags: [Auth]
