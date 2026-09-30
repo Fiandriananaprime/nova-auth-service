@@ -17,14 +17,18 @@ import type { VerificationCodeService } from "./verificationCode.service.js";
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
 import type { VerificationCodeRepository } from "../repository/verificationCode.repository.js";
 import { UserNotFoundError } from "../errorHandler/UserError.js";
+import type { MobileMoneyVerificationClient } from "../client/mobileMoneyVerification.client.js";
 
 
 const RESEND_COOLDOWN_MS = 30_000;
 export class AuthService {
+  private readonly phoneResendAt = new Map<string, number>();
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly verificationRepository: VerificationCodeRepository,
     private readonly verificationCode: VerificationCodeService,
+    private readonly mobileMoneyVerification: MobileMoneyVerificationClient,
   ) {}
 
   async login(data: {
@@ -52,16 +56,14 @@ export class AuthService {
     return safeUser;
   }
 
-  async sendCode(userId: string, channel: VerificationChannel,purpose: VerificationPurpose) {
+  async sendEmailCode(userId: string, purpose: VerificationPurpose) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new UserNotFoundError();
-
-    const target = channel === VerificationChannel.email ? user.email : user.phone;
-    if (!target) throw new UserNotFoundError();
+    if (!user.email) throw new UserNotFoundError();
 
     const latestCode = await this.verificationRepository.findLatestActive(
       userId,
-      channel,
+      VerificationChannel.email,
       purpose,
     );
 
@@ -69,28 +71,52 @@ export class AuthService {
       throw new VerificationRateLimitError();
     }
 
-    await this.verificationRepository.invalidateActive(userId, channel, purpose);
+    await this.verificationRepository.invalidateActive(userId, VerificationChannel.email, purpose);
 
     await this.verificationCode.createVerificationCode({
       userId,
-      channel,
-      destination:target,
-      purpose
-    })    
+      channel: VerificationChannel.email,
+      destination: user.email,
+      purpose,
+    });
   }
 
-  async verifyCode(userId: string,code: string, channel: VerificationChannel,purpose: VerificationPurpose){
+  async sendPhoneCode(userId: string, purpose: VerificationPurpose) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new UserNotFoundError();
+
+    const target = purpose === VerificationPurpose.phone_change ? user.pendingPhone : user.phone;
+    if (!target) throw new UserNotFoundError();
+
+    const cooldownKey = `${userId}:${purpose}`;
+    const lastSentAt = this.phoneResendAt.get(cooldownKey) ?? 0;
+    if (lastSentAt > Date.now() - RESEND_COOLDOWN_MS) throw new VerificationRateLimitError();
+
+    await this.mobileMoneyVerification.sendVerification(target);
+    this.phoneResendAt.set(cooldownKey, Date.now());
+  }
+
+  private async verifyEmailCode(userId: string, code: string, purpose: VerificationPurpose) {
     const verificationCode = await this.verificationRepository.findLatestActive(
       userId,
-      channel,
+      VerificationChannel.email,
       purpose,
     );
     if(!verificationCode) throw new VerificationNotFound()
     if (verificationCode.expiresAt < new Date()) throw new ExpiredVerificationCode();
     if (!(await argon2.verify(verificationCode.codeHash, code))) throw new InvalidVerificationCode();
     if (!(await this.verificationRepository.consume(verificationCode.id))) throw new VerificationNotFound();
+  }
 
-    return true;
+  async verifyPhoneCode(userId: string, code: string, purpose: VerificationPurpose) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new UserNotFoundError();
+    const target = purpose === VerificationPurpose.phone_change ? user.pendingPhone : user.phone;
+    if (!target) throw new UserNotFoundError();
+
+    if (!(await this.mobileMoneyVerification.verify(target, code))) {
+      throw new InvalidVerificationCode();
+    }
   }
   
   async verifyUserCode(
@@ -98,14 +124,11 @@ export class AuthService {
     code: string,
     channel: VerificationChannel,
   ) {
-    await this.verifyCode(
-      userId,
-      code,
-      channel,
-      channel === VerificationChannel.email
-        ? VerificationPurpose.email_verification
-        : VerificationPurpose.phone_verification,
-    );
+    const purpose = channel === VerificationChannel.email
+      ? VerificationPurpose.email_verification
+      : VerificationPurpose.phone_verification;
+    if (channel === VerificationChannel.email) await this.verifyEmailCode(userId, code, purpose);
+    else await this.verifyPhoneCode(userId, code, purpose);
 
     channel === VerificationChannel.email
       ? await this.userRepository.markEmailAsVerified(userId)
@@ -117,11 +140,12 @@ export class AuthService {
     code: string,
     channel: VerificationChannel,
   ) {
-    await this.verifyCode(userId, code, channel, VerificationPurpose.sudo);
+    if (channel === VerificationChannel.email) await this.verifyEmailCode(userId, code, VerificationPurpose.sudo);
+    else await this.verifyPhoneCode(userId, code, VerificationPurpose.sudo);
   }
 
   async confirmEmailChange(userId: string, code: string) {
-    await this.verifyCode(userId, code, VerificationChannel.email, VerificationPurpose.email_change);
+    await this.verifyEmailCode(userId, code, VerificationPurpose.email_change);
     const user = await this.userRepository.findById(userId);
     if(!user) throw new UserNotFoundError();
     if(!user.pendingEmail) throw new UserNotFoundError();
@@ -130,7 +154,7 @@ export class AuthService {
   }
 
   async confirmPhoneChange(userId: string, code: string) {
-    await this.verifyCode(userId, code, VerificationChannel.phone, VerificationPurpose.phone_change);
+    await this.verifyPhoneCode(userId, code, VerificationPurpose.phone_change);
     const user = await this.userRepository.findById(userId);
     if(!user) throw new UserNotFoundError();
     if(!user.pendingPhone) throw new UserNotFoundError();

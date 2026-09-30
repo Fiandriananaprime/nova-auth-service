@@ -10,5 +10,9 @@ export const InternalRoute = (
         router.post<{Body:{access_token:string}}>(
             "/validate",authController.validateAccessToken.bind(authController)
         )
+
+        router.post<{Body:{access_token:string; csrf_token:string}}>(
+            "/validate-csrf",authController.validateCsrf.bind(authController)
+        )
     },option)
 }

@@ -74,13 +74,12 @@ export class AuthController {
     return reply.status(200).send(user);
   }
 
-  async sendVerification(request: FastifyRequest<{Params:{channel: string}}>, reply: FastifyReply) {
-    const channel = request.params.channel;
-    if (!this.isVerificationChannel(channel)) {
-      return reply.code(400).send({ error: "Unsupported verification channel" });
-    }
-    const purpose = channel === "email" ? VerificationPurpose.email_verification : VerificationPurpose.phone_verification;
-    return this.sendVerificationCode(request, reply,purpose);
+  async sendEmailVerification(request: FastifyRequest, reply: FastifyReply) {
+    return this.sendVerificationCode(request, reply, VerificationChannel.email, VerificationPurpose.email_verification);
+  }
+
+  async sendPhoneVerification(request: FastifyRequest, reply: FastifyReply) {
+    return this.sendVerificationCode(request, reply, VerificationChannel.phone, VerificationPurpose.phone_verification);
   }
 
   async sendSudoVerification(request:FastifyRequest<{Params: {channel: string}}>, reply: FastifyReply){
@@ -89,19 +88,28 @@ export class AuthController {
     }
     const purpose = VerificationPurpose.sudo;
 
-    return this.sendVerificationCode(request,reply,purpose)
+    return this.sendVerificationCode(
+      request,
+      reply,
+      request.params.channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
+      purpose,
+    )
   }
 
-  private async sendVerificationCode( request: FastifyRequest<{Params:{channel:string}}>, reply: FastifyReply,purpose:VerificationPurpose) {
+  private async sendVerificationCode(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    channel: VerificationChannel,
+    purpose: VerificationPurpose,
+  ) {
     const userId = request.userId;
-    const channel = request.params.channel
     if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-    await this.authService.sendCode(
-      userId, 
-      channel === "email" ? VerificationChannel.email : VerificationChannel.phone,
-      purpose
-    );
+    if (channel === VerificationChannel.email) {
+      await this.authService.sendEmailCode(userId, purpose);
+    } else {
+      await this.authService.sendPhoneCode(userId, purpose);
+    }
     return reply.status(204).send();
   }
 
@@ -205,6 +213,21 @@ export class AuthController {
       valid: true,
       userId: session.userId,
       sessionId: session.sessionId,
+    };
+  }
+
+  async validateCsrf(request: FastifyRequest<{ Body: { access_token: string; csrf_token: string } }>) {
+    const data = await redis.get(`access_token:${request.body.access_token}`);
+
+    if (!data) {
+      throw new UnauthorizedError("Invalid access token");
+    }
+
+    const session = JSON.parse(data) as { sessionId: string };
+    const csrfService = new CsrfService();
+
+    return {
+      valid: await csrfService.verify(session.sessionId, request.body.csrf_token),
     };
   }
 

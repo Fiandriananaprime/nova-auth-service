@@ -18,6 +18,8 @@ import { InternalRoute } from "./routes/internal.route.js";
 import { Authenticate } from "./middleware/authenticate.middleware.js";
 import { accountRoute } from "./routes/account.route.js";
 import { AccountController } from "./controller/account.controller.js";
+import { MobileMoneyVerificationClient } from "./client/mobileMoneyVerification.client.js";
+import { env } from "./config/env.js";
  
 
 export const routes = (app: FastifyInstance) => {
@@ -28,12 +30,16 @@ export const routes = (app: FastifyInstance) => {
   const userRepository = new UserRepository();
   const verificationCodeRepository = new VerificationCodeRepository();
   const eventService = new EventService(outboxRepository);
+  const mobileMoneyVerification = new MobileMoneyVerificationClient(
+    env.MOBILE_MONEY_PROVIDER_URL,
+    env.MOBILE_MONEY_PROVIDER_API_KEY,
+  );
 
   // Service
   const accessTokenService = new AccessTokenService();
   const sessionService = new SessionService(sessionRepository, accessTokenService,userRepository);
   const verificationCodeService = new VerificationCodeService(verificationCodeRepository,eventService)
-  const authService = new AuthService(userRepository, verificationCodeRepository,verificationCodeService);
+  const authService = new AuthService(userRepository, verificationCodeRepository,verificationCodeService, mobileMoneyVerification);
   const userService = new UserService(userRepository,InitiateClient(),verificationCodeService);
 
   // Controller

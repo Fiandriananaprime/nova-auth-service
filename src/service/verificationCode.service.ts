@@ -20,19 +20,14 @@ export class VerificationCodeService {
       data: {
           userId: string;
           destination: string;
-      channel: VerificationChannel;
+      channel: VerificationChannel.email;
       purpose:VerificationPurpose;
     },
     tx?: Prisma.TransactionClient,
   ) {
     const code = randomInt(100000, 1000000).toString();
-    const codeHash = await import("argon2").then((argon2) =>
-      argon2.hash(code),
-    );
-
-    const expiresAt = new Date(
-      Date.now() + 5 * 60 * 1000,
-    );
+    const codeHash = await import("argon2").then((argon2) => argon2.hash(code));
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     const verificationCode: CreateVerificationCode = {
       userId: data.userId,
