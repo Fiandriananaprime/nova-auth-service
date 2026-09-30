@@ -74,12 +74,52 @@ export class AuthController {
     return reply.status(200).send(user);
   }
 
-  async sendEmailVerification(request: FastifyRequest, reply: FastifyReply) {
+  async resendEmailVerification(request: FastifyRequest, reply: FastifyReply) {
+    if(!request.userId) throw new UnauthorizedError("Unauthorized");
     return this.sendVerificationCode(request, reply, VerificationChannel.email, VerificationPurpose.email_verification);
   }
 
-  async sendPhoneVerification(request: FastifyRequest, reply: FastifyReply) {
+  async resendPhoneVerification(request: FastifyRequest, reply: FastifyReply) {
+    if(!request.userId) throw new UnauthorizedError("Unauthorized");
     return this.sendVerificationCode(request, reply, VerificationChannel.phone, VerificationPurpose.phone_verification);
+  }
+
+  async sendEmailVerification(request: FastifyRequest<{Body: {email: string}}>, reply: FastifyReply) {
+    const user = await this.userService.findByEmail(request.body.email);
+
+    if(!user || user.emailVerified) return reply.status(204).send();
+    const verificationSession = await this.sessionService.createVerificationSession(user.userId)
+
+    if(verificationSession.accessToken) {
+      reply.setCookie("verification_token",verificationSession.accessToken,{
+        httpOnly:true,
+        secure: process.env["NODE_ENV"] === "production",
+        sameSite:"lax",
+        path: "/"
+      })
+    }
+    await this.authService.sendEmailCode(user.userId, VerificationPurpose.email_verification);
+    
+    return reply.status(204).send();
+  }
+
+  async sendPhoneVerification(request: FastifyRequest<{Body: {phone: string}}>, reply: FastifyReply) {
+    const user = await this.userService.findByPhone(request.body.phone);
+
+    if(!user || user.phoneVerified) return reply.status(204).send();
+    const verificationSession = await this.sessionService.createVerificationSession(user.userId)
+
+    if(verificationSession.accessToken) {
+      reply.setCookie("verification_token",verificationSession.accessToken,{
+        httpOnly:true,
+        secure: process.env["NODE_ENV"] === "production",
+        sameSite:"lax",
+        path: "/"
+      })
+    }
+    await this.authService.sendPhoneCode(user.userId, VerificationPurpose.phone_verification);
+    
+    return reply.status(204).send();
   }
 
   async sendSudoVerification(request:FastifyRequest<{Params: {channel: string}}>, reply: FastifyReply){
@@ -101,8 +141,9 @@ export class AuthController {
     reply: FastifyReply,
     channel: VerificationChannel,
     purpose: VerificationPurpose,
+    id?: string
   ) {
-    const userId = request.userId;
+    const userId = request.userId || id;
     if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
     if (channel === VerificationChannel.email) {

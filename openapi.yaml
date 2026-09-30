@@ -100,8 +100,15 @@ paths:
     post:
       tags: [Auth]
       operationId: sendEmailVerification
-      summary: Send an email verification code through the email flow
-      security: [{ verificationCookie: [], csrfHeader: [] }]
+      summary: Send a new email verification code through the email flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties: { email: { type: string, format: email } }
       responses:
         '204': { description: Verification code queued }
         '401': { description: Verification session required }
@@ -121,7 +128,14 @@ paths:
       tags: [Auth]
       operationId: sendPhoneVerification
       summary: Ask the mock mobile-money provider to send a phone verification code
-      security: [{ verificationCookie: [], csrfHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties: { phone: { type: string } }
       responses:
         '204': { description: Verification request accepted; the OTP is never returned by auth-service }
         '401': { description: Verification session required }
@@ -217,6 +231,35 @@ paths:
       responses:
         '200': { description: Token validation result }
         '401': { description: Invalid token }
+
+  /internal/validate-csrf:
+    post:
+      tags: [Internal]
+      operationId: validateCsrfToken
+      summary: Validate a CSRF token for the API gateway
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_token, csrf_token]
+              additionalProperties: false
+              properties:
+                access_token: { type: string }
+                csrf_token: { type: string }
+      responses:
+        '200':
+          description: CSRF validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid]
+                properties:
+                  valid: { type: boolean }
+        '401': { description: Invalid or expired access token or CSRF token }
+  
   /health:
     get:
       tags: [System]
