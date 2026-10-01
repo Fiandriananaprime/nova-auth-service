@@ -40,6 +40,7 @@ export class SessionRepository {
   }
 
   async findActiveById(id: string) {
+    await prisma.$connect();
     return prisma.userSession.findFirst({
       where: {
         id,

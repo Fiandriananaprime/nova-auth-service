@@ -8,3 +8,19 @@ export const redis = createClient({
 redis.on("error", (error) => {
   console.error("Redis error:", error);
 });
+
+export async function ensureRedisConnection() {
+  if (redis.isReady) return;
+
+  if (!redis.isOpen) {
+    await redis.connect();
+    return;
+  }
+
+  try {
+    await redis.ping();
+  } catch {
+    redis.destroy();
+    await redis.connect();
+  }
+}

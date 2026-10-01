@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { redis } from "../database/redis.js";
+import { createClient } from "redis";
+import { env } from "../config/env.js";
+import { ensureRedisConnection, redis } from "../database/redis.js";
 
 type AuthPurpose = "access" | "verification" | "sudo";
 
@@ -22,6 +24,7 @@ export class AccessTokenService {
     verificationId?: string;
     purpose: AuthPurpose;
   }) {
+    await ensureRedisConnection();
     const accessToken = randomBytes(32).toString("hex");
     const ttl = this.ttl[data.purpose];
     const key = `${data.purpose === "access" ? "access" : data.purpose === "verification" ? "verification" : "sudo"}_token:${accessToken}`;
@@ -52,7 +55,15 @@ export class AccessTokenService {
           ? "verification"
           : "sudo";
 
-    const data = await redis.get(`${prefix}_token:${token}`);
+    let data: string | null;
+    try {
+      const client = createClient({ url: env.REDIS_URL });
+      await client.connect();
+      data = await client.get(`${prefix}_token:${token}`);
+      await client.quit();
+    } catch (error) {
+      throw error;
+    }
 
     if (!data) return null;
 
@@ -60,6 +71,7 @@ export class AccessTokenService {
   }
 
   async revoke(token: string, purpose: AuthPurpose) {
+    await ensureRedisConnection();
     const prefix =
       purpose === "access"
         ? "access"

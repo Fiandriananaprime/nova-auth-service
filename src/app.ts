@@ -58,11 +58,18 @@ app.setErrorHandler((error, request, reply) => {
     });
   }
   
-  if (error instanceof AppError) {
-    return reply.status(error.statusCode).send({
+  if (
+    error instanceof AppError ||
+    (typeof error === "object" &&
+      error !== null &&
+      typeof (error as { code?: unknown }).code === "string" &&
+      typeof (error as { statusCode?: unknown }).statusCode === "number")
+  ) {
+    const appError = error as AppError;
+    return reply.status(appError.statusCode).send({
       error: {
-        code: error.code,
-        message: error.message,
+        code: appError.code,
+        message: appError.message,
       },
     });
   }
@@ -70,8 +77,7 @@ app.setErrorHandler((error, request, reply) => {
   return reply.status(500).send({
     error: {
       code: "INTERNAL_SERVER_ERROR",
-      message: "Internal server error",
+      message: error instanceof Error ? error.message : "Internal server error",
     },
   });
 });
-

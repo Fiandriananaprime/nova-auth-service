@@ -54,17 +54,6 @@ export const authRoute = (
       },
     );
 
-    router.post<{Params: {channel: string}}>(
-      "/auth/:channel/resend-verification",
-      { preHandler: [verification.authenticate.bind(verification), requireCsrf] },
-      async (request:FastifyRequest<{Params: {channel: string}}>, reply) => {
-        const channel = request.params.channel;
-        if (channel === "email") return userControler.resendEmailVerification(request, reply);
-        if (channel === "phone") return userControler.resendPhoneVerification(request, reply);
-        return reply.code(400).send({ error: "Unsupported verification channel" });
-      },
-    );
-
     router.post<{ Body: { code: string } }>("/auth/email/verify",
       {
         schema: {body:requestVerify},
