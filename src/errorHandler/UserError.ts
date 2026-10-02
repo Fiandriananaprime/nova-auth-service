@@ -1,19 +1,19 @@
 import { AppError } from "./AppError.js";
 
 export class UserNotFoundError extends AppError {
-    constructor () {
+    constructor (message?: string) {
         super (
             "USER_NOT_FOUND",
             404,
-            "User not found"
+            message || "User not found"
         )
     }
 }
 
 export class UserAlreadyExists extends AppError {
-    constructor () {
+    constructor (message?: string) {
         super("USER_ALREADY_EXISTS",
         409,
-        "User already exists")
+        message || "User already exists")
     }
 }

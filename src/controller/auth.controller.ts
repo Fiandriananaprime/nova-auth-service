@@ -60,13 +60,13 @@ export class AuthController {
     reply
       .setCookie("access_token", session.accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env["NODE_ENV"] === "production",
         sameSite: "lax",
         path: "/",
       })
       .setCookie("refresh_token", session.refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env["NODE_ENV"] === "production",
         sameSite: "lax",
         path: "/auth",
       });

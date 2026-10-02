@@ -29,7 +29,7 @@ export const authRoute = (
 
     router.get(
       "/auth/csrf",
-      { preHandler: verification.authenticate.bind(verification) },
+      { preHandler: authenticate.authenticate.bind(authenticate) },
       userControler.getCsrf.bind(userControler),
     );
 
