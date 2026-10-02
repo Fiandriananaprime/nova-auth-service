@@ -18,7 +18,10 @@ export class OutboxPublisherService {
       const events = await this.outboxRepository.findUnpublished();
 
       for (const event of events) {
-        const accepted = this.eventPublisher.publish(event.type, event.payload);
+        const accepted = this.eventPublisher.publish(event.type, {
+          type: event.type,
+          payload: event.payload,
+        });
 
         if (!accepted) break;
 

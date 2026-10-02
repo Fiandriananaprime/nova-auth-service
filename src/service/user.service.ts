@@ -10,6 +10,7 @@ import { UserClient } from "../client/user.client.js";
 import { VerificationCodeService } from "./verificationCode.service.js";
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
 import type { AuthMe } from "../types/user.js";
+import { LowStrengthPasswordError } from "../errorHandler/InvalidCredentialError.js";
 
 export class UserService {
   constructor(
@@ -41,8 +42,8 @@ export class UserService {
     });
     
     if(!this.isStrongPassword(data.password)){
-      await this.userClient.deleteUser(user.id);
-      throw new Error("Password does not meet strength requirements");
+      await this.deleteCreatedUser(user.id);
+      throw new LowStrengthPasswordError();
     }
     try {
       const passwordHash = await argon2.hash(data.password);
@@ -50,7 +51,9 @@ export class UserService {
       return await prisma.$transaction(async (tx) => {
         const credentials = await this.userRepository.createUser(tx, {
           id: user.id,
-          email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
           password: passwordHash,
           role: "buyer"
         });
@@ -68,8 +71,19 @@ export class UserService {
         return credentials;
       });
     } catch (error) {
-      await this.userClient.deleteUser(user.id);
+      await this.deleteCreatedUser(user.id);
       throw error;
+    }
+  }
+
+  private async deleteCreatedUser(userId: string): Promise<void> {
+    try {
+      await this.userClient.deleteUser(userId);
+    } catch (rollbackError) {
+      console.error("Failed to roll back user creation", {
+        userId,
+        rollbackError,
+      });
     }
   }
 

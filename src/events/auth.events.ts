@@ -1,4 +1,4 @@
-export const AUTH_EXCHANGE = "nova.auth";
+export const AUTH_EXCHANGE = "nova.events";
 
 export type EmailVerificationRequested = {
   event: "auth.email_verification_requested";

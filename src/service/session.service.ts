@@ -4,6 +4,7 @@ import { SessionRepository } from "../repository/session.repository.js";
 import { AccessTokenService } from "./accessToken.service.js";
 import type { UserRepository } from "../repository/user.repository.js";
 import type { Session } from "../types/session.js";
+import { UserNotFoundError } from "../errorHandler/UserError.js";
 
 export class SessionService {
   constructor(
@@ -95,5 +96,10 @@ export class SessionService {
     const session = await this.sessionRepository.findActiveById(sessionId);
     if (!session) throw new Error("Session not found or already revoked");
     await this.sessionRepository.revoke(sessionId);
+  }
+
+  async revokeAllSessions(userId: string) {
+    const result = await this.sessionRepository.revokeAllByUserId(userId);
+    if(!result) throw new UserNotFoundError(`No active sessions found for user: ${userId}`);
   }
 }

@@ -40,6 +40,7 @@ export class SessionRepository {
   }
 
   async findActiveById(id: string) {
+    await prisma.$connect();
     return prisma.userSession.findFirst({
       where: {
         id,
@@ -74,7 +75,7 @@ export class SessionRepository {
   }
 
   async revokeAllByUserId(userId: string) {
-    return prisma.userSession.updateMany({
+    const {count} = await prisma.userSession.updateMany({
       where: {
         userId,
         revokedAt: null,
@@ -83,6 +84,9 @@ export class SessionRepository {
         revokedAt: new Date(),
       },
     });
+
+    if(count === 0) return false;
+    return true;
   }
 
   async findByUserId(userId: string): Promise<Session[]> {

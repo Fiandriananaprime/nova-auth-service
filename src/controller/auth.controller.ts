@@ -7,7 +7,7 @@ import { parseUserAgent } from "../utils/user-agent.js";
 import { CsrfService } from "../service/csrf.service.js";
 import { UnauthorizedError } from "../errorHandler/InvalidCredentialError.js";
 import { VerificationChannel, VerificationPurpose } from "../dto/VerificationCodeSchema.js";
-import { redis } from "../database/redis.js";
+import { ensureRedisConnection, redis } from "../database/redis.js";
 import { AccessTokenService } from "../service/accessToken.service.js";
 
 export class AuthController {
@@ -24,7 +24,7 @@ export class AuthController {
   ) {
     const body = request.body as RegisterRequest;
     const user = await this.userService.createUser(body);
-
+    
     const verificationSession = await this.sessionService.createVerificationSession(user.id)
 
     reply.setCookie("verification_token",verificationSession.accessToken,{
@@ -60,13 +60,13 @@ export class AuthController {
     reply
       .setCookie("access_token", session.accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env["NODE_ENV"] === "production",
         sameSite: "lax",
         path: "/",
       })
       .setCookie("refresh_token", session.refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env["NODE_ENV"] === "production",
         sameSite: "lax",
         path: "/auth",
       });
@@ -104,7 +104,12 @@ export class AuthController {
   }
 
   async sendPhoneVerification(request: FastifyRequest<{Body: {phone: string}}>, reply: FastifyReply) {
-    const user = await this.userService.findByPhone(request.body.phone);
+    let user;
+    try {
+      user = await this.userService.findByPhone(request.body.phone);
+    } catch {
+      return reply.status(204).send();
+    }
 
     if(!user || user.phoneVerified) return reply.status(204).send();
     const verificationSession = await this.sessionService.createVerificationSession(user.userId)
@@ -239,6 +244,7 @@ export class AuthController {
 
   async validateAccessToken(request:FastifyRequest<{Body:{access_token:string}}>) {
 
+    await ensureRedisConnection();
     const data = await redis.get(`access_token:${request.body.access_token}`);
 
     if (!data) {
@@ -258,6 +264,7 @@ export class AuthController {
   }
 
   async validateCsrf(request: FastifyRequest<{ Body: { access_token: string; csrf_token: string } }>) {
+    await ensureRedisConnection();
     const data = await redis.get(`access_token:${request.body.access_token}`);
 
     if (!data) {

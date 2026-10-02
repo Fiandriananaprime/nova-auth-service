@@ -1,10 +1,11 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { redis } from "../config/redis.js";
+import { ensureRedisConnection, redis } from "../database/redis.js";
 
 const CSRF_TTL = 60 * 60; 
 
 export class CsrfService {
   async create(sessionId: string): Promise<string> {
+    await ensureRedisConnection();
     const token = randomBytes(32).toString("hex");
 
     await redis.set(
@@ -22,6 +23,7 @@ export class CsrfService {
     sessionId: string,
     token: string,
   ): Promise<boolean> {
+    await ensureRedisConnection();
     const storedToken = await redis.get(`csrf:${sessionId}`);
 
     if (!storedToken) {
@@ -39,6 +41,7 @@ export class CsrfService {
   }
 
   async delete(sessionId: string): Promise<void> {
+    await ensureRedisConnection();
     await redis.del(`csrf:${sessionId}`);
   }
 }
